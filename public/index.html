@@ -1463,7 +1463,7 @@ function go(view){
   document.getElementById('topTitle').textContent = titles[view];
   if(view==='dashboard'){ renderClassGrid(); renderDash(); }
 }
-const OLLAMA_URL = 'http://192.168.1.234:11434'; // <-- replace with your Mac mini's IP from Step 16
+const OLLAMA_URL = 'https://suspend-shaking-spousal.ngrok-free.dev';
 
 async function askLocalAI() {
   const input = document.getElementById('localAiInput');
@@ -1479,7 +1479,10 @@ async function askLocalAI() {
   try {
     const res = await fetch(`${OLLAMA_URL}/api/generate`, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true'
+      },
       body: JSON.stringify({ model: 'llama3.1:8b', prompt: q, stream: false })
     });
     const data = await res.json();
