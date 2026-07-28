@@ -838,75 +838,144 @@ function handleFileUpload(file){
 }
 
 const classes = {
-  calc:{title:"AP Calculus AB",icon:"📐",color:"#3a5f9e",teacher:"Mr. Johnson",grade:"A-",pct:"90%",gradeClass:"a",
+  tv:{title:"TV and Broadcasting 1",icon:"📺",color:"#3a5f9e",teacher:"⚠️ EDIT teacher name",grade:"⚠️",pct:"90%",gradeClass:"a",day:"A",
     upcoming:[
-      {name:"Problem Set 7",due:"Due Today",cls:"hot",status:"upcoming",points:30,
-        req:"Complete problems 1–15 in section 7.2, showing all derivative work. Submit as a single PDF."},
-      {name:"Derivatives Quiz",due:"Due Tomorrow",cls:"hot",status:"upcoming",points:25,
-        req:"Covers chain rule and implicit differentiation. 10 questions, 20 minutes, open notes."},
-      {name:"Unit 6 Review",due:"Due in 5 days",cls:"soon",status:"upcoming",points:20,
-        req:"Review packet covering all Unit 6 topics ahead of the test."},
-      {name:"Related Rates Worksheet",due:"Submitted — awaiting grade",cls:"amber",status:"submitted",points:20,
-        req:"Word problems 1–8 on related rates. Show setup and units on every answer.",
-        turnIn:[{name:"related_rates_hw.pdf",type:"📄",via:"Google Drive"}],
-        aiEstimate:{pct:"85%",letter:"B",note:"Work looks complete and units are shown throughout, but two answers on problems 5 and 7 don't match the expected setup — worth double-checking before it's graded."}},
-      {name:"Limits Practice Set 2",due:"Submitted — awaiting grade",cls:"amber",status:"submitted",points:15,
-        req:"Practice set on one-sided limits and limits at infinity.",
-        turnIn:[{name:"limits_set2.pdf",type:"📄",via:"Google Drive"}],
-        aiEstimate:{pct:"96%",letter:"A",note:"Clean, fully worked answers with correct notation throughout — should come back close to full marks."}},
+      {name:"Course Overview",due:"No due date set",cls:"soon",status:"upcoming",points:0,
+        req:"Come be part of the Paradigm News Station! This class is only a semester, but scholars signed up are expected to take this class AND Video Production Capstone in the spring. This course is designed to provide students with the basic knowledge and skills related to the television broadcasting industry, including camera operation, audio systems, lighting systems, pre-production, studio operations, control room operations, visual effects and graphics, and copyright laws. Open only to 10th, 11th, and 12th graders. You MUST enroll in Video Production Capstone 2nd semester."},
+      {name:"Camera Operation Basics",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:20,
+        req:"Practice framing, panning, and tilting shots with a studio camera. Submit a 2-minute practice clip demonstrating each technique."},
+      {name:"Studio Safety Quiz",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:10,
+        req:"Short quiz covering studio floor safety, cable management, and equipment handling."},
+      {name:"Lighting Setup Exercise",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:20,
+        req:"Set up a 3-point lighting configuration for an interview shot and photograph the setup with notes on each light's purpose."},
+      {name:"News Script Draft",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:25,
+        req:"Write a 60-second news segment script following AP broadcast style, including anchor intro and reporter package cues."},
+      {name:"Control Room Rotation Log",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:15,
+        req:"Complete a rotation through director, technical director, and audio board roles during a live studio segment; submit a reflection log."},
+      {name:"Copyright & Fair Use Worksheet",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:15,
+        req:"Answer case-study questions on copyright law as it applies to broadcast footage, music, and archival clips."}
     ],
     past:[
-      {name:"Limits Worksheet",score:"20/20",status:"graded"},
-      {name:"Chapter 4 Test",score:"88/100",status:"graded"},
-      {name:"Related Rates Lab",score:"18/20",status:"graded"}
+      {name:"Intro to Broadcast History",score:"⚠️ EDIT /20",status:"graded"},
+      {name:"Equipment ID Quiz",score:"⚠️ EDIT /15",status:"graded"},
+      {name:"First Camera Test Shoot",score:"⚠️ EDIT /25",status:"graded"}
     ],
-    drive:[{name:"Lecture Notes — Unit 6.pdf",type:"📄"},{name:"Practice Problems.docx",type:"📝"},{name:"Formula Sheet.pdf",type:"📄"}]},
-  chem:{title:"Chemistry",icon:"🧪",color:"#5e9e5a",teacher:"Mrs. Smith",grade:"B+",pct:"87%",gradeClass:"b",
+    drive:[]},
+  yearbook:{title:"Yearbook",icon:"📸",color:"#9e5a7f",teacher:"⚠️ EDIT teacher name",grade:"⚠️",pct:"90%",gradeClass:"a",day:"A",
     upcoming:[
-      {name:"Lab Report — Rates",due:"MISSING",cls:"hot",status:"upcoming",points:25,
-        req:"Write up your reaction rates lab: hypothesis, data table, graph, and conclusion."},
-      {name:"Chapter 6 Quiz Review",due:"Due Tomorrow",cls:"hot",status:"upcoming",points:10,
-        req:"Review questions covering reaction rates and equilibrium."},
-      {name:"Unit Test",due:"Due in 5 days",cls:"soon",status:"upcoming",points:100,
-        req:"Covers Chapters 5–6, multiple choice and free response."},
-      {name:"Periodic Trends Worksheet",due:"Submitted — awaiting grade",cls:"amber",status:"submitted",points:15,
-        req:"Fill in trend arrows and explain atomic radius, ionization energy, and electronegativity trends.",
-        turnIn:[{name:"periodic_trends.docx",type:"📝",via:"Google Drive"}],
-        aiEstimate:{pct:"78%",letter:"C+",note:"Trend directions are correct, but the electronegativity explanation is thin — likely to lose a couple points on reasoning."}}
+      {name:"Course Overview",due:"No due date set",cls:"soon",status:"upcoming",points:0,
+        req:"A quality yearbook is a product of a quality team. This course acts like a functioning publication team with professional design standards, workflows, project management, and interpersonal communication. Skills covered include layout design and composition, project management, typography and color theory, photojournalism, file and data management, and interpersonal communication. Students distribute a final project to the entire school at year's end. Class fee contains the optional $400 Jostens Summer Camp."},
+      {name:"Spread Layout Draft 1",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:25,
+        req:"Design a two-page spread draft for the Fall Sports section using the master style guide grid."},
+      {name:"Color Theory Worksheet",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:15,
+        req:"Apply complementary and analogous color schemes to a sample spread and explain your choices."},
+      {name:"Photojournalism Assignment",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:20,
+        req:"Shoot and submit 10 candid photos from a school event following photojournalism composition guidelines."},
+      {name:"Caption Writing Practice",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:10,
+        req:"Write AP-style captions for 8 provided photos, including full names and context."},
+      {name:"Deadline Section Check-In",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:15,
+        req:"Submit your assigned section's progress: draft spreads, missing photos list, and interview status."},
+      {name:"Typography Style Guide Quiz",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:10,
+        req:"Quiz on the yearbook's approved fonts, headline hierarchy, and body copy rules."}
     ],
-    past:[{name:"Titration Lab",score:"17/20",status:"graded"},{name:"Periodic Table Quiz",score:"9/10",status:"graded"}],
-    drive:[{name:"Lab Safety Guidelines.pdf",type:"📄"},{name:"Rates Lab Template.docx",type:"📝"}]},
-  eng:{title:"English 11",icon:"📖",color:"#9e5a7f",teacher:"Ms. Davis",grade:"A",pct:"93%",gradeClass:"a",
+    past:[
+      {name:"Publication Workflow Intro",score:"⚠️ EDIT /20",status:"graded"},
+      {name:"Team Roles Reflection",score:"⚠️ EDIT /10",status:"graded"},
+      {name:"Cover Concept Sketches",score:"⚠️ EDIT /20",status:"graded"}
+    ],
+    drive:[]},
+  audio:{title:"Digital Audio 1",icon:"🎧",color:"#5e9e5a",teacher:"⚠️ EDIT teacher name",grade:"⚠️",pct:"90%",gradeClass:"a",day:"A",
     upcoming:[
-      {name:"Essay Draft — Symbolism",due:"Due in 2 days",cls:"soon",status:"upcoming",points:50,
-        req:"3-page draft analyzing symbolism in the assigned novel. MLA format, works cited included."},
-      {name:"Reading Journal Entry 6",due:"Submitted — awaiting grade",cls:"amber",status:"submitted",points:10,
-        req:"One-page reflection on chapters 9–12.",
-        turnIn:[{name:"journal_entry6.pdf",type:"📄",via:"Google Drive"}],
-        aiEstimate:{pct:"92%",letter:"A-",note:"Thoughtful reflection with good textual references — reads like your strongest journal entry this unit."}}
+      {name:"Course Overview",due:"No due date set",cls:"soon",status:"upcoming",points:0,
+        req:"This introductory course takes a comprehensive approach to the fundamentals of audio production. Scholars will explore the principles, techniques, and tools in creating and manipulating sound."},
+      {name:"Waveform Basics Worksheet",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:10,
+        req:"Label and explain amplitude, frequency, and waveform shapes on the provided diagrams."},
+      {name:"Microphone Types Quiz",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:10,
+        req:"Quiz covering dynamic, condenser, and ribbon microphones and their ideal use cases."},
+      {name:"First Recording Session",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:25,
+        req:"Record a 1-minute voiceover clean take in the booth, export as WAV, and submit through the shared drive."},
+      {name:"EQ and Compression Exercise",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:20,
+        req:"Apply EQ and compression to a provided raw vocal track to clean up sibilance and even out levels."},
+      {name:"Podcast Segment Edit",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:25,
+        req:"Edit a 3-minute raw podcast segment: remove dead air, add intro/outro music, and balance levels."},
+      {name:"Sound Design Foley Project",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:20,
+        req:"Create foley sound effects for a short silent video clip using household objects and layer them in your DAW."}
     ],
-    past:[{name:"Poetry Analysis",score:"95/100",status:"graded"},{name:"Reading Quiz Ch.9",score:"10/10",status:"graded"}],
-    drive:[{name:"Essay Rubric.pdf",type:"📄"},{name:"Novel — Chapters 8-12.pdf",type:"📄"}]},
-  hist:{title:"US History",icon:"🏛️",color:"#9e8a4a",teacher:"Mr. Brown",grade:"A-",pct:"90%",gradeClass:"a",
+    past:[
+      {name:"DAW Navigation Basics",score:"⚠️ EDIT /15",status:"graded"},
+      {name:"Signal Flow Diagram",score:"⚠️ EDIT /10",status:"graded"},
+      {name:"Audio File Formats Quiz",score:"⚠️ EDIT /10",status:"graded"}
+    ],
+    drive:[]},
+  precalc:{title:"Pre-Calculus",icon:"📐",color:"#4a8e9e",teacher:"⚠️ EDIT teacher name",grade:"⚠️",pct:"90%",gradeClass:"a",day:"B",
     upcoming:[
-      {name:"Reading Response 4",due:"MISSING",cls:"hot",status:"upcoming",points:15,
-        req:"Half-page response connecting the reading to a modern parallel."},
-      {name:"DBQ Outline",due:"Due in 3 days",cls:"soon",status:"upcoming",points:20,
-        req:"Thesis and 3-paragraph outline using the provided source packet."}
+      {name:"Course Overview",due:"No due date set",cls:"soon",status:"upcoming",points:0,
+        req:"This class is for scholars who wish to take Calculus. Scholars can either take this in place of Math 3 or after completing Math 3. First semester is spent as an accelerated version of Math 3; second semester focuses on preparing scholars for Calculus, including the AP Calculus test."},
+      {name:"Functions & Transformations HW",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:20,
+        req:"Complete problems on shifting, stretching, and reflecting parent functions."},
+      {name:"Polynomial Division Practice",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:20,
+        req:"Practice long division and synthetic division of polynomials, showing all steps."},
+      {name:"Rational Functions Quiz",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:25,
+        req:"Quiz covering asymptotes, holes, and end behavior of rational functions."},
+      {name:"Trigonometric Identities Worksheet",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:20,
+        req:"Prove and simplify expressions using fundamental trig identities."},
+      {name:"Unit Circle Mastery Check",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:15,
+        req:"Timed check requiring exact values of sine, cosine, and tangent at standard unit circle angles."},
+      {name:"Limits Intro Packet",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:20,
+        req:"Introductory packet on evaluating limits graphically and numerically, preparing for Calculus concepts."}
     ],
-    past:[{name:"WWII Test",score:"91/100",status:"graded"}],
-    drive:[{name:"DBQ Source Packet.pdf",type:"📄"}]},
-  span:{title:"Spanish III",icon:"🌐",color:"#4a8e9e",teacher:"Sra. Martinez",grade:"A",pct:"94%",gradeClass:"a",
+    past:[
+      {name:"Algebra Skills Review",score:"⚠️ EDIT /25",status:"graded"},
+      {name:"Function Notation Quiz",score:"⚠️ EDIT /15",status:"graded"},
+      {name:"Graphing Basics Test",score:"⚠️ EDIT /100",status:"graded"}
+    ],
+    drive:[]},
+  latin:{title:"Latin 1",icon:"🏛️",color:"#9e8a4a",teacher:"⚠️ EDIT teacher name",grade:"⚠️",pct:"90%",gradeClass:"a",day:"B",
     upcoming:[
-      {name:"Vocabulary Project",due:"Due in 5 days",cls:"soon",status:"upcoming",points:30,
-        req:"Create a themed vocabulary poster with 20 new words used in original sentences."},
-      {name:"Verb Conjugation Set",due:"Submitted — awaiting grade",cls:"amber",status:"submitted",points:15,
-        req:"Preterite vs. imperfect practice set, 20 sentences.",
-        turnIn:[{name:"verb_practice.pdf",type:"📄",via:"Google Drive"}],
-        aiEstimate:{pct:"90%",letter:"A-",note:"Consistent and mostly accurate tense usage — a couple of irregular verbs look off, worth a quick check."}}
+      {name:"Course Overview",due:"No due date set",cls:"soon",status:"upcoming",points:0,
+        req:"Latin is not dead! Through classic works, art, culture, and modern applications, scholars learn to read and speak Latin (and even do some medieval art), while experiencing the rich history of Rome and its profound influence on Europe and beyond."},
+      {name:"Vocabulary Set 1 Quiz",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:10,
+        req:"Quiz on Chapter 1 vocabulary: nouns, verbs, and common phrases."},
+      {name:"Noun Declension Worksheet",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:20,
+        req:"Decline the provided first and second declension nouns in all cases, singular and plural."},
+      {name:"Roman Culture Reading Response",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:15,
+        req:"Read the assigned passage on daily life in ancient Rome and write a half-page response."},
+      {name:"Verb Conjugation Practice",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:20,
+        req:"Conjugate first conjugation verbs in the present tense across all persons."},
+      {name:"Translation Exercise — Chapter 2",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:25,
+        req:"Translate the Chapter 2 reading passage from Latin to English, showing your work for tricky constructions."},
+      {name:"Roman Art Mini-Project",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:20,
+        req:"Recreate a small piece of Roman mosaic or fresco-style art and write a short artist's statement connecting it to a cultural theme studied in class."}
     ],
-    past:[{name:"Ch.5 Verb Quiz",score:"18/20",status:"graded"}],
-    drive:[{name:"Vocab List Unit 5.docx",type:"📝"}]}
+    past:[
+      {name:"Latin Alphabet & Pronunciation Quiz",score:"⚠️ EDIT /10",status:"graded"},
+      {name:"Greeting Phrases Test",score:"⚠️ EDIT /15",status:"graded"},
+      {name:"Intro to Roman History Worksheet",score:"⚠️ EDIT /15",status:"graded"}
+    ],
+    drive:[]},
+  photo:{title:"Commercial Photography 2",icon:"📷",color:"#8579b8",teacher:"⚠️ EDIT teacher name",grade:"⚠️",pct:"90%",gradeClass:"a",day:"B",
+    upcoming:[
+      {name:"Course Overview",due:"No due date set",cls:"soon",status:"upcoming",points:0,
+        req:"A continuation of CP1 with greater emphasis on technical skill including exposure settings, lighting styles and methods, digital editing and output, and professional practices. A portfolio of each scholar's work is expected at the end of the course. Access to a DSLR camera is necessary for completion of this course."},
+      {name:"Manual Exposure Practice Set",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:20,
+        req:"Shoot 10 photos in full manual mode demonstrating control of aperture, shutter speed, and ISO."},
+      {name:"Studio Lighting Diagram",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:15,
+        req:"Diagram and photograph a 2-light studio portrait setup, labeling key light, fill light, and modifiers used."},
+      {name:"Product Photography Shoot",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:25,
+        req:"Photograph a small product using commercial lighting techniques suitable for an online listing."},
+      {name:"Retouching & Editing Assignment",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:20,
+        req:"Retouch a provided portrait image using non-destructive editing techniques; submit before/after versions."},
+      {name:"Client Brief Response",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:15,
+        req:"Read a mock client brief and submit a shot list and mood board proposal before shooting."},
+      {name:"Portfolio Section Draft",due:"⚠️ EDIT due date",cls:"soon",status:"upcoming",points:25,
+        req:"Select and sequence 8 of your best images so far into a draft portfolio section with consistent editing style."}
+    ],
+    past:[
+      {name:"Camera Settings Review Quiz",score:"⚠️ EDIT /15",status:"graded"},
+      {name:"Composition Rules Worksheet",score:"⚠️ EDIT /15",status:"graded"},
+      {name:"CP1 Skills Recap Shoot",score:"⚠️ EDIT /25",status:"graded"}
+    ],
+    drive:[]}
 };
 
 /* WHAT-IF GRADE CALCULATOR state — declared before renderDash() uses it below */
@@ -1463,7 +1532,7 @@ function go(view){
   document.getElementById('topTitle').textContent = titles[view];
   if(view==='dashboard'){ renderClassGrid(); renderDash(); }
 }
-const OLLAMA_URL = 'http://192.168.1.234:11434';
+const OLLAMA_URL = 'http://192.168.1.234:11434'; // <-- replace with your Mac mini's IP from Step 16
 
 async function askLocalAI() {
   const input = document.getElementById('localAiInput');
@@ -1479,10 +1548,7 @@ async function askLocalAI() {
   try {
     const res = await fetch(`${OLLAMA_URL}/api/generate`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'ngrok-skip-browser-warning': 'true'
-      },
+      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ model: 'llama3.1:8b', prompt: q, stream: false })
     });
     const data = await res.json();
