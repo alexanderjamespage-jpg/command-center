@@ -1463,7 +1463,7 @@ function go(view){
   document.getElementById('topTitle').textContent = titles[view];
   if(view==='dashboard'){ renderClassGrid(); renderDash(); }
 }
-const OLLAMA_URL = 'https://suspend-shaking-spousal.ngrok-free.dev';
+const OLLAMA_URL = 'http://192.168.1.234:11434';
 
 async function askLocalAI() {
   const input = document.getElementById('localAiInput');
