@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Command Center — Demo v3</title>
+<style>
+  :root{
+    --bg:#0b0d13; --panel:rgba(255,255,255,0.045); --panel2:rgba(255,255,255,0.08); --border:rgba(255,255,255,0.11);
+    --text:#e7e9ee; --dim:#8d94a6;
+    --red:#d9776f; --amber:#c99a4a; --green:#5aa87f; --blue:#5b84c4; --purple:#8579b8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,'SF Pro Display','Segoe UI',system-ui,sans-serif;}
+  body{
+    background:
+      radial-gradient(circle at 10% 10%, rgba(91,132,196,0.16), transparent 42%),
+      radial-gradient(circle at 88% 12%, rgba(133,121,184,0.13), transparent 42%),
+      radial-gradient(circle at 50% 95%, rgba(91,132,196,0.10), transparent 45%),
+      var(--bg);
+    background-attachment:fixed;
+    color:var(--text);
+  }
+  .shell{display:flex;height:100vh;overflow:hidden;}
+
+  /* Glass surfaces */
+  .sidebar,.topbar,.card,.att-side-card,.class-card,.modal-box,.cd-accordion,
+  .gdrive-card,.drive-folder,.cal-wrap,.cal-dow,.cal-day,.claude-window,.ai-footer,
+  .mod-card,.class-accordion,.chip,.whatif-reset,.connect-drive-btn,.gdrive-btn,
+  .drive-search,.ai-input,.askInput,.claude-titlebar,.nav-item.active{
+    backdrop-filter:blur(28px) saturate(160%);
+    -webkit-backdrop-filter:blur(28px) saturate(160%);
+  }
+  .card,.class-card,.modal-box,.att-side-card,.gdrive-card,.cal-wrap,.claude-window{
+    box-shadow:0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+
+  /* SIDEBAR */
+  .sidebar{width:78px;background:var(--panel);border-right:1px solid var(--border);
+    display:flex;flex-direction:column;align-items:center;padding:18px 0;gap:5px;flex-shrink:0;overflow-y:auto;}
+  .nav-item{width:56px;display:flex;flex-direction:column;align-items:center;gap:3px;
+    padding:9px 0;border-radius:10px;cursor:pointer;color:var(--dim);font-size:9.2px;
+
+    transition:background .12s,color .12s;text-align:center;}
+  .nav-item .ic{font-size:17px;}
+  .nav-item .ic svg{width:19px;height:19px;display:block;}
+  .nav-item:hover{background:var(--panel2);color:var(--text);}
+  .nav-item.active{background:rgba(74,143,232,0.15);color:var(--blue);}
+  .nav-spacer{flex:1;}
+  .nav-item.ai-toggle{color:#b89bf5;}
+  .nav-item.ai-toggle.on{background:rgba(139,110,245,0.18);}
+  .nav-item.gdrive{color:#7ec4f0;}
+  .nav-item.gdrive.active{background:rgba(126,196,240,0.15);}
+
+  .main{flex:1;display:flex;flex-direction:column;min-width:0;}
+  .topbar{height:56px;background:var(--panel);border-bottom:1px solid var(--border);
+    display:flex;align-items:center;justify-content:space-between;padding:0 22px;flex-shrink:0;}
+  .topbar .title{font-size:15px;font-weight:700;}
+  .topbar .right{display:flex;align-items:center;gap:18px;color:var(--dim);font-size:14px;}
+  .bell{position:relative;cursor:pointer;display:flex;}
+  .bell:hover,.person-ic:hover{color:var(--text);}
+  .person-ic{cursor:pointer;display:flex;}
+  .bell .badge{position:absolute;top:-6px;right:-8px;background:var(--red);color:white;
+    font-size:9px;border-radius:8px;padding:1px 5px;font-weight:700;}
+
+  .content{flex:1;padding:22px;overflow-y:auto;}
+  .view{display:none;}
+  .view.active{display:block;}
+  .section-title{font-size:16px;font-weight:700;margin-bottom:16px;}
+
+  .dash-flex{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;}
+  .dash-flex-main{flex:2 1 480px;min-width:0;}
+  .dash-flex-side{flex:1 1 280px;min-width:260px;}
+  @media (max-width:760px){
+    .dash-flex{flex-direction:column;}
+    .dash-flex-main{width:100%;}
+    .dash-flex-side{width:100%;}
+  }
+
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:16px 18px;}
+  .chat-log-full{display:flex;flex-direction:column;gap:10px;}
+  .msg{padding:10px 14px;border-radius:10px;font-size:13px;max-width:85%;line-height:1.5;}
+  .msg.user{background:var(--panel2);align-self:flex-end;color:var(--text);}
+  .msg.claude{background:#221c3d;align-self:flex-start;color:#d8cef5;border:1px solid #3a2f66;}
+  .msg.claude .label{color:#b89bf5;font-size:10px;font-weight:700;letter-spacing:0.5px;display:block;margin-bottom:4px;}
+  .placeholder{padding:60px 20px;text-align:center;color:var(--dim);font-size:13px;}
+
+  /* UPDATE page */
+  .update-source-row{display:flex;justify-content:space-between;align-items:center;padding:12px 4px;border-bottom:1px solid var(--border);}
+  .update-source-row:last-of-type{border-bottom:none;}
+  .update-source-left{display:flex;align-items:center;gap:12px;}
+  .update-source-icon{font-size:22px;}
+  .update-source-name{font-size:13.5px;font-weight:600;}
+  .update-source-time{font-size:11.5px;color:var(--dim);margin-top:2px;}
+  .sync-btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:20px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;}
+  .sync-btn:hover{border-color:var(--blue);}
+  .sync-btn.syncing{opacity:0.7;cursor:wait;}
+  .sync-btn-all{width:100%;margin-top:14px;background:var(--blue);border:none;color:white;border-radius:10px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;}
+  .changelog-item{display:flex;gap:12px;padding:11px 4px;border-bottom:1px solid var(--border);font-size:12.5px;}
+  .changelog-item:last-child{border-bottom:none;}
+  .changelog-date{color:var(--dim);font-size:11px;white-space:nowrap;flex-shrink:0;width:64px;}
+  .changelog-text{color:var(--text);}
+
+  /* GOOGLE DOC VIEWER */
+  .gdoc-frame{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,0.4);color:#202124;}
+  .gdoc-topbar{display:flex;justify-content:space-between;align-items:center;padding:10px 20px;border-bottom:1px solid #e8eaed;}
+  .gdoc-topbar-left{display:flex;align-items:center;gap:12px;}
+  .gdoc-icon{font-size:26px;}
+  .gdoc-filename{font-size:15px;font-weight:500;color:#202124;}
+  .gdoc-menu{font-size:11.5px;color:#5f6368;margin-top:2px;}
+  .gdoc-share-btn{background:#0b57d0;color:#fff;border:none;border-radius:18px;padding:7px 18px;font-size:12.5px;font-weight:600;cursor:pointer;}
+  .gdoc-toolbar{display:flex;gap:16px;align-items:center;padding:7px 20px;border-bottom:1px solid #e8eaed;background:#f8f9fa;color:#3c4043;font-size:12.5px;}
+  .gdoc-page-wrap{background:#e9eaed;padding:32px 20px;display:flex;justify-content:center;max-height:520px;overflow-y:auto;}
+  .gdoc-page{background:#fff;width:100%;max-width:600px;min-height:500px;padding:56px 60px;box-shadow:0 1px 4px rgba(0,0,0,0.15);color:#202124;font-family:'Georgia',serif;line-height:1.7;font-size:13.5px;}
+  .gdoc-page h1{font-size:19px;margin-bottom:6px;font-family:-apple-system,sans-serif;}
+  .gdoc-page .gdoc-meta{font-size:11.5px;color:#5f6368;margin-bottom:24px;font-family:-apple-system,sans-serif;}
+  .gdoc-page p{margin-bottom:14px;}
+
+  /* DASHBOARD: compact per-class rows */
+  .dash-layout{display:flex;gap:16px;align-items:flex-start;}
+  .dash-main{flex:1;min-width:0;}
+  .dash-side{width:260px;flex-shrink:0;display:flex;flex-direction:column;gap:14px;}
+
+  .class-accordion{border-bottom:1px solid var(--border);}
+  .class-accordion:last-child{border-bottom:none;}
+  .class-summary-row{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:14px 6px;cursor:pointer;
+  }
+  .class-summary-row:hover{background:var(--panel2);}
+  .cs-left{display:flex;align-items:center;gap:12px;}
+  .cs-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+  .cs-name{font-size:13.5px;font-weight:600;}
+  .cs-next{font-size:11.5px;color:var(--dim);margin-top:2px;}
+  .cs-next.hot{color:var(--red);}
+  .cs-right{display:flex;align-items:center;gap:14px;}
+  .grade-stack{display:flex;flex-direction:column;align-items:flex-end;line-height:1.15;}
+  .grade-stack .gs-pct{font-size:17px;font-weight:800;}
+  .grade-stack .gs-pct.a{color:var(--green);}
+  .grade-stack .gs-pct.b{color:var(--amber);}
+  .grade-stack .gs-ltr{font-size:10.5px;color:var(--dim);margin-top:1px;}
+  .grade-stack.center{align-items:center;}
+  .grade-stack.big .gs-pct{font-size:20px;}
+  .cs-count{font-size:11px;color:var(--dim);background:var(--panel2);border-radius:20px;padding:3px 10px;}
+  .cs-chevron{font-size:11px;color:var(--dim);transition:transform .15s;}
+  .class-accordion.open .cs-chevron{transform:rotate(90deg);}
+
+  .cs-dropdown{max-height:0;overflow:hidden;transition:max-height .18s ease;}
+  .class-accordion.open .cs-dropdown{max-height:260px;}
+  .cs-dropdown-inner{padding:2px 6px 14px 54px;}
+  .cs-assignment-row{display:flex;justify-content:space-between;padding:7px 0;font-size:12.5px;border-bottom:1px solid #1c2130;}
+  .cs-assignment-row:last-of-type{border-bottom:none;}
+  .cs-assignment-row .due{font-size:11px;color:var(--dim);}
+  .cs-assignment-row .due.hot{color:var(--red);font-weight:700;}
+  .cs-assignment-row .due.soon{color:var(--amber);}
+  .cs-view-link{display:inline-block;margin-top:8px;font-size:11px;color:var(--blue);cursor:pointer;}
+
+  /* Attendance side card */
+  .att-side-card{background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:16px 18px;}
+  .att-side-head{font-size:13px;font-weight:700;color:var(--green);margin-bottom:12px;display:flex;align-items:center;gap:7px;}
+  .att-ring-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:12px;}
+  .att-side-num{font-size:20px;font-weight:800;}
+  .att-side-label{font-size:11px;color:var(--dim);text-align:center;}
+  .att-breakdown{font-size:11.5px;}
+  .att-breakdown-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);}
+  .att-breakdown-row:last-child{border-bottom:none;}
+  .att-breakdown-row .v{color:var(--dim);}
+  .att-ring{
+    width:96px;height:96px;border-radius:50%;
+    background:conic-gradient(var(--green) 0% 92%, #232838 92% 100%);
+    display:flex;align-items:center;justify-content:center;position:relative;
+  }
+  .att-ring::after{
+    content:"92%";position:absolute;width:72px;height:72px;background:var(--panel);
+    border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:var(--text);
+  }
+
+  /* CLASSES grid */
+  .class-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .class-card{background:var(--panel);border:1px solid var(--border);border-radius:20px;overflow:hidden;
+    cursor:pointer;transition:transform .12s,border-color .12s;}
+  .class-card:hover{transform:translateY(-2px);border-color:var(--blue);}
+  .class-banner{height:64px;display:flex;align-items:center;padding:0 16px;gap:12px;}
+  .class-banner .icon-lg{font-size:26px;}
+  .class-banner .cname{font-size:14px;font-weight:700;color:white;}
+  .class-body{padding:14px 16px;}
+  .class-stat-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .grade-chip{font-size:20px;font-weight:800;}
+  .grade-chip.a{color:var(--green);}
+  .grade-chip.b{color:var(--amber);}
+  .up-next{font-size:11.5px;color:var(--dim);margin-bottom:4px;}
+  .up-next-title{font-size:12.5px;color:var(--text);}
+  .up-next-due{font-size:11px;}
+  .up-next-due.hot{color:var(--red);font-weight:700;}
+  .up-next-due.soon{color:var(--amber);}
+
+  /* What-if grade slider on class cards */
+  .whatif-box{border-top:1px solid var(--border);margin-top:12px;padding-top:12px;}
+  .whatif-head{display:flex;justify-content:space-between;align-items:center;font-size:10.5px;color:var(--dim);letter-spacing:0.4px;margin-bottom:8px;text-transform:uppercase;}
+  .whatif-reset{background:none;border:1px solid var(--border);color:var(--dim);border-radius:8px;padding:2px 8px;font-size:9.5px;cursor:pointer;}
+  .whatif-reset:hover{color:var(--text);border-color:var(--dim);}
+  .whatif-slider{width:100%;accent-color:var(--purple);cursor:pointer;height:4px;}
+  .whatif-result{display:flex;justify-content:space-between;align-items:baseline;margin-top:8px;}
+  .whatif-pct{font-size:16px;font-weight:800;color:#c4b8f0;}
+  .whatif-ltr{font-size:11px;color:var(--dim);}
+  .whatif-label{font-size:10.5px;color:var(--dim);}
+
+  /* CLASS DETAIL */
+  .back-btn{color:var(--dim);font-size:12px;cursor:pointer;margin-bottom:14px;display:inline-block;}
+  .back-btn:hover{color:var(--text);}
+  .detail-banner{border-radius:20px;padding:20px 24px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;}
+  .detail-banner .left{display:flex;align-items:center;gap:14px;}
+  .detail-banner .icon-xl{width:52px;height:52px;border-radius:13px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:24px;}
+  .detail-banner h2{font-size:19px;color:white;}
+  .detail-banner .teacher{font-size:12px;color:rgba(255,255,255,0.75);margin-top:2px;}
+  .detail-grade{background:rgba(255,255,255,0.15);border-radius:10px;padding:10px 20px;text-align:center;}
+  .detail-grade .g{font-size:22px;font-weight:800;color:white;}
+  .detail-grade .pct{font-size:11px;color:rgba(255,255,255,0.85);margin-top:1px;}
+  .detail-grade .l{font-size:10px;color:rgba(255,255,255,0.75);margin-top:2px;}
+
+  .a-detail-item{cursor:pointer;}
+  .a-detail-item:hover{background:var(--panel2);}
+  .due.amber{color:var(--amber);font-weight:600;}
+  .status-tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:8px;}
+  .status-tag.pending{background:rgba(232,161,58,0.15);color:var(--amber);}
+  .status-tag.graded{background:rgba(62,232,122,0.15);color:var(--green);}
+  .ai-est-inline{font-size:10.5px;color:#b89bf5;background:rgba(139,110,245,0.14);padding:2px 8px;border-radius:10px;margin-left:6px;}
+
+  /* Modal */
+  .modal-overlay{
+    display:none;position:fixed;inset:0;background:rgba(5,6,12,0.55);
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    align-items:center;justify-content:center;z-index:50;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal-box{
+    background:var(--panel);border:1px solid var(--border);border-radius:22px;
+    width:520px;max-width:92vw;max-height:85vh;overflow-y:auto;padding:24px;
+  }
+  .modal-close{float:right;color:var(--dim);cursor:pointer;font-size:16px;}
+  .modal-title{font-size:17px;font-weight:700;margin-bottom:4px;}
+  .modal-meta{font-size:12px;color:var(--dim);margin-bottom:16px;}
+  .modal-section{margin-bottom:16px;}
+  .modal-section h4{font-size:11px;letter-spacing:0.5px;color:var(--dim);text-transform:uppercase;margin-bottom:8px;}
+  .modal-req{font-size:13px;line-height:1.6;color:var(--text);}
+  .turnin-folder{
+    background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;
+  }
+  .turnin-file{display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:12.5px;border-bottom:1px solid var(--border);}
+  .turnin-file:last-child{border-bottom:none;}
+  .turnin-empty{color:var(--dim);font-size:12px;}
+  .ai-grade-box{
+    background:linear-gradient(180deg,#1a1430,#150f26);border:1px solid #362a5c;border-radius:10px;padding:14px 16px;
+  }
+  .ai-grade-head{display:flex;align-items:center;gap:8px;color:#c4b8f0;font-size:12px;font-weight:700;margin-bottom:8px;}
+  .ai-grade-num{font-size:24px;font-weight:800;color:#e0d4ff;}
+  .ai-grade-note{font-size:12px;color:#b3a8d6;margin-top:6px;line-height:1.5;}
+  .actual-grade-box{
+    background:rgba(62,232,122,0.08);border:1px solid rgba(62,232,122,0.3);border-radius:10px;padding:14px 16px;
+  }
+  .actual-grade-num{font-size:24px;font-weight:800;color:var(--green);}
+  .tabs{display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid var(--border);}
+  .tab{padding:9px 16px;font-size:12.5px;color:var(--dim);cursor:pointer;border-bottom:2px solid transparent;}
+  .tab.active{color:var(--text);border-color:var(--blue);}
+  /* Merged assignment accordion in class detail */
+  .cd-accordion{background:var(--panel);border:1px solid var(--border);border-radius:18px;margin-bottom:10px;overflow:hidden;}
+  .cd-acc-head{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;cursor:pointer;}
+  .cd-acc-head:hover{background:var(--panel2);}
+  .cd-acc-left{display:flex;align-items:center;gap:10px;}
+  .cd-acc-name{font-size:13.5px;font-weight:600;}
+  .cd-acc-right{display:flex;align-items:center;gap:10px;}
+  .cd-acc-due{font-size:11.5px;color:var(--dim);}
+  .cd-acc-due.hot{color:var(--red);font-weight:700;}
+  .cd-acc-due.amber{color:var(--amber);font-weight:600;}
+  .cd-acc-score{font-size:12px;color:var(--green);font-weight:700;}
+  .cd-chevron{font-size:10px;color:var(--dim);transition:transform .15s;}
+  .cd-accordion.open .cd-chevron{transform:rotate(90deg);}
+  .cd-acc-body{max-height:0;overflow:hidden;transition:max-height .18s ease;}
+  .cd-accordion.open .cd-acc-body{max-height:340px;}
+  .cd-acc-inner{padding:0 16px 16px;border-top:1px solid var(--border);}
+  .cd-acc-inner h5{font-size:10.5px;letter-spacing:0.5px;color:var(--dim);text-transform:uppercase;margin:12px 0 6px;}
+  .cd-acc-req{font-size:12.5px;line-height:1.5;color:var(--text);}
+  .est-grade-badge{
+    background:rgba(139,110,245,0.14);color:#b89bf5;border:1px solid #3a2f66;
+    font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:10px;
+  }
+  .get-est-btn{
+    background:linear-gradient(180deg,#241d3f,#1a1430);border:1px solid #3a2f66;color:#c4b8f0;
+    border-radius:10px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;margin:10px 0 4px;
+  }
+  .get-est-btn:hover{border-color:#8b6ef5;}
+  .get-est-btn.loading{opacity:0.7;cursor:wait;}
+  .upload-btn{
+    background:var(--panel2);border:1px solid var(--border);color:var(--text);
+    border-radius:10px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;margin:10px 8px 4px 0;
+  }
+  .upload-btn:hover{border-color:var(--blue);}
+  .ai-est-toggle{
+    display:flex;align-items:center;gap:7px;background:var(--panel2);border:1px solid var(--border);
+    color:var(--dim);border-radius:20px;padding:6px 12px;font-size:11.5px;font-weight:600;cursor:pointer;
+  }
+  .ai-est-toggle.on{color:#c4b8f0;border-color:#3a2f66;}
+  .ai-est-toggle-dot{width:8px;height:8px;border-radius:50%;background:var(--dim);}
+  .ai-est-toggle.on .ai-est-toggle-dot{background:#8b6ef5;}
+
+  /* AI History — styled like the Claude app window */
+  .claude-window{
+    background:#0e0b1a;border:1px solid #2a2245;border-radius:20px;overflow:hidden;
+  }
+  .claude-titlebar{
+    height:36px;background:#151024;border-bottom:1px solid #2a2245;
+    display:flex;align-items:center;padding:0 14px;gap:8px;
+  }
+  .claude-dot{width:11px;height:11px;border-radius:50%;}
+  .claude-dot.r{background:#ff5f57;} .claude-dot.y{background:#febc2e;} .claude-dot.g{background:#28c840;}
+  .claude-titlebar-label{flex:1;text-align:center;color:#8b7fb5;font-size:11.5px;margin-right:60px;display:flex;align-items:center;justify-content:center;gap:6px;}
+  .claude-body{padding:18px 20px;min-height:260px;display:flex;flex-direction:column;gap:14px;}
+  .claude-msg{display:flex;gap:10px;max-width:88%;}
+  .claude-msg.user{align-self:flex-end;flex-direction:row-reverse;}
+  .claude-avatar{
+    width:26px;height:26px;border-radius:7px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;
+  }
+  .claude-avatar.ai{background:#d97757;color:#1a0f0a;}
+  .claude-avatar.user{background:#2a3348;color:#c8d0e0;}
+  .claude-bubble{
+    background:#171225;border:1px solid #2a2245;border-radius:18px;padding:10px 14px;
+    font-size:12.5px;line-height:1.55;color:#e4dcf5;
+  }
+  .claude-msg.user .claude-bubble{background:#1a1f30;color:var(--text);border-color:#232838;}
+  .claude-timestamp{font-size:9.5px;color:#5f5680;margin-top:4px;}
+
+  /* AI sidebar page — full panel with centered bottom composer */
+  .ai-page-window{display:flex;flex-direction:column;height:calc(100vh - 130px);max-height:720px;}
+  .ai-page-log{flex:1;overflow-y:auto;}
+  .ai-history-divider{
+    text-align:center;font-size:10.5px;letter-spacing:0.5px;color:var(--dim);
+    text-transform:uppercase;margin:18px 0 10px;padding-top:14px;border-top:1px solid #2a2245;
+  }
+  .ai-history-divider:first-child{border-top:none;margin-top:0;padding-top:0;}
+  .ai-page-composer{border-top:1px solid #2a2245;padding:16px 20px;display:flex;justify-content:center;}
+  .ai-page-composer-inner{width:100%;max-width:560px;}
+  .ai-page-composer .ai-input-row{display:flex;gap:10px;}
+  .subview{display:none;}
+  .subview.active{display:block;}
+  .a-detail-item{display:flex;justify-content:space-between;align-items:center;padding:11px 4px;border-bottom:1px solid var(--border);font-size:13px;}
+  .a-detail-item:last-child{border-bottom:none;}
+  .a-detail-item .score{font-size:12px;color:var(--green);font-weight:700;}
+  .a-detail-item .due{font-size:11px;color:var(--dim);}
+  .a-detail-item .due.hot{color:var(--red);font-weight:700;}
+
+  .gdrive-card{background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:16px 18px;margin-top:14px;}
+  .gdrive-head{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;margin-bottom:12px;}
+  .gdrive-file{display:flex;justify-content:space-between;align-items:center;
+    background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;margin-bottom:8px;font-size:12.5px;}
+  .gdrive-file:last-child{margin-bottom:0;}
+  .gdrive-file .fname{display:flex;align-items:center;gap:8px;}
+  .gdrive-btn{background:var(--panel2);border:1px solid var(--border);color:var(--dim);border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;}
+  .connect-drive-btn{background:#1a1630;border:1px solid #362a5c;color:#c4b8f0;border-radius:8px;padding:7px 14px;font-size:11.5px;cursor:pointer;float:right;}
+
+  /* GOOGLE DRIVE consolidated page */
+  .drive-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  .drive-search{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;color:var(--text);font-size:12.5px;width:260px;}
+  .drive-folders{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px;}
+  .drive-folder{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:14px;text-align:center;cursor:pointer;}
+  .drive-folder:hover{border-color:var(--blue);}
+  .drive-folder .fic{font-size:26px;margin-bottom:6px;}
+  .drive-folder .fname2{font-size:11.5px;font-weight:600;}
+  .drive-folder .fcount{font-size:10.5px;color:var(--dim);margin-top:2px;}
+  .drive-recent-item{display:flex;justify-content:space-between;align-items:center;padding:10px 4px;border-bottom:1px solid var(--border);font-size:12.5px;}
+  .drive-recent-item:last-child{border-bottom:none;}
+  .drive-recent-item .dname{display:flex;align-items:center;gap:9px;}
+  .drive-recent-item .dclass{font-size:10.5px;color:var(--dim);background:var(--panel2);padding:2px 8px;border-radius:10px;}
+
+  /* CALENDAR — Apple-style */
+  .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .cal-legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;}
+  .cal-legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--dim);}
+  .cal-legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+  .cal-month-title{font-size:20px;font-weight:700;letter-spacing:-0.3px;}
+  .cal-nav{display:flex;gap:8px;}
+  .cal-nav-btn{
+    width:30px;height:30px;border-radius:50%;background:var(--panel2);border:1px solid var(--border);
+    color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;
+  }
+  .cal-nav-btn:hover{background:var(--border);}
+  .cal-wrap{background:var(--panel);border:1px solid var(--border);border-radius:22px;padding:16px;overflow:hidden;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);border-radius:18px;overflow:hidden;margin-top:0;}
+  .cal-dow{background:var(--panel);font-size:10.5px;color:var(--dim);text-align:center;padding:8px 0;font-weight:700;letter-spacing:0.5px;}
+  .cal-day{background:var(--panel);min-height:78px;padding:6px;font-size:11px;position:relative;cursor:pointer;transition:background .1s;}
+  .cal-day:hover{background:var(--panel2);}
+  .cal-day.empty{background:var(--panel);cursor:default;}
+  .cal-day.empty:hover{background:var(--panel);}
+  .cal-day .dnum{color:var(--dim);font-size:11px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:50%;}
+  .cal-day.today .dnum{background:var(--red);color:white;font-weight:700;}
+  .cal-dot{background:rgba(232,83,74,0.15);color:var(--red);border-radius:5px;padding:2px 4px;font-size:9px;margin-top:3px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .cal-dot.amber{background:rgba(232,161,58,0.15);color:var(--amber);}
+  .cal-dot.purple{background:rgba(139,110,245,0.18);color:#b89bf5;}
+  .cal-dot.blue2{background:rgba(74,143,232,0.15);color:var(--blue);}
+  .cal-more{font-size:9px;color:var(--dim);margin-top:2px;}
+
+  /* INBOX */
+  .inbox-filter-bar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .inbox-filter-chip{
+    background:var(--panel2);border:1px solid var(--border);color:var(--dim);
+    border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;
+    transition:background .12s,color .12s;
+  }
+  .inbox-filter-chip:hover{color:var(--text);}
+  .inbox-filter-chip.active{background:var(--blue);border-color:var(--blue);color:white;}
+  .inbox-item:hover{background:var(--panel2);}
+  .inbox-item:last-child{border-bottom:none;}
+  .inbox-item.unread{background:rgba(74,143,232,0.05);}
+  .inbox-avatar{width:34px;height:34px;border-radius:50%;background:var(--panel2);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+  .inbox-body{flex:1;min-width:0;}
+  .inbox-top{display:flex;justify-content:space-between;}
+  .inbox-sender{font-size:13px;font-weight:600;}
+  .inbox-date{font-size:11px;color:var(--dim);}
+  .inbox-subject{font-size:12px;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .unread-dot{width:7px;height:7px;border-radius:50%;background:var(--blue);flex-shrink:0;align-self:center;}
+
+  /* PERSISTENT AI FOOTER */
+  .ai-footer{background:linear-gradient(180deg,#171025,#12101d);border-top:1px solid #362a5c;
+    padding:12px 22px;flex-shrink:0;transition:max-height .18s ease, padding .18s ease;max-height:180px;overflow:hidden;}
+  .ai-footer.collapsed{max-height:0;padding-top:0;padding-bottom:0;border-top:none;}
+  .ai-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;}
+  .ai-head .lbl{display:flex;align-items:center;gap:8px;color:#c4b8f0;font-size:12.5px;font-weight:700;}
+  .ai-collapse-btn{background:none;border:none;color:#8b7fb5;font-size:13px;cursor:pointer;}
+  .ai-input-row{display:flex;gap:10px;margin-bottom:9px;}
+  .ai-input{flex:1;background:#1a1630;border:1px solid #362a5c;border-radius:10px;padding:9px 14px;color:var(--text);font-size:13px;}
+  .ai-send{background:var(--purple);border:none;color:white;border-radius:10px;padding:0 16px;cursor:pointer;font-size:14px;}
+  .chip-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip{background:#1a1630;border:1px solid #362a5c;color:#c4b8f0;padding:5px 11px;border-radius:22px;font-size:10.5px;cursor:pointer;}
+  .chip:hover{background:#241d3f;}
+  .ai-response{background:#1a1630;border:1px solid #362a5c;border-radius:10px;padding:10px 13px;font-size:12px;line-height:1.55;margin-top:9px;display:none;}
+  .ai-response.show{display:block;}
+  .ai-response .lbl2{color:#b89bf5;font-size:10px;font-weight:700;letter-spacing:0.5px;display:block;margin-bottom:5px;}
+
+  /* ============ RESPONSIVE: DESKTOP / IPAD / PHONE ============ */
+
+  /* Tablet (iPad portrait/landscape and small laptops) */
+  @media (max-width:1024px){
+    .class-grid{grid-template-columns:repeat(2,1fr);}
+    .drive-folders{grid-template-columns:repeat(3,1fr);}
+    .content{padding:18px;}
+  }
+
+  /* Phone */
+  @media (max-width:680px){
+    .shell{flex-direction:column;height:100vh;height:100dvh;}
+    .sidebar{
+      width:100%;height:auto;flex-direction:row;order:2;flex-shrink:0;
+      border-right:none;border-top:1px solid var(--border);
+      padding:6px 4px;gap:2px;overflow-x:auto;justify-content:flex-start;
+    }
+    .nav-item{flex-direction:column;width:auto;min-width:54px;padding:6px 5px;font-size:8.5px;flex-shrink:0;}
+    .nav-item .ic svg{width:18px;height:18px;}
+    .nav-spacer{display:none;}
+    .main{order:1;min-height:0;}
+    .topbar{height:50px;padding:0 14px;}
+    .topbar .title{font-size:14px;}
+    .content{padding:14px;}
+
+    .class-grid{grid-template-columns:1fr;gap:12px;}
+    .drive-folders{grid-template-columns:repeat(2,1fr);}
+    .dash-flex-side{min-width:0;}
+
+    .detail-banner{flex-wrap:wrap;gap:14px;padding:16px 18px;}
+    .detail-banner .left{flex:1 1 100%;}
+
+    .cal-day{min-height:52px;padding:4px;font-size:9.5px;}
+    .cal-day .dnum{font-size:10px;width:18px;height:18px;}
+    .cal-dot{font-size:8px;padding:1px 3px;}
+    .cal-more{font-size:8px;}
+    .cal-header{flex-wrap:wrap;gap:8px;}
+    .cal-month-title{font-size:17px;}
+
+    .modal-box{padding:18px;width:94vw;}
+    .ai-page-window{height:calc(100dvh - 210px);}
+    .ai-page-composer{padding:12px 14px;}
+    .chip-row{gap:6px;}
+    .chip{font-size:9.5px;padding:5px 9px;}
+
+    .ai-footer{padding:10px 14px;}
+    .ai-input-row{flex-wrap:nowrap;}
+
+    .grade-stack .gs-pct{font-size:15px;}
+    .whatif-slider{touch-action:pan-x;}
+  }
+
+  /* Small phone */
+  @media (max-width:380px){
+    .nav-item{min-width:48px;font-size:8px;}
+    .section-title{font-size:14px;}
+    .class-banner .cname{font-size:12.5px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div class="sidebar">
+    <div class="nav-item active" data-view="dashboard"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1v-9"/></svg></span>Dashboard</div>
+    <div class="nav-item" data-view="drive"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg></span>Drive</div>
+    <div class="nav-item" data-view="docviewer" id="navDocBtn"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h7l4 4V19a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19V5a1.5 1.5 0 0 1 1.5-1.5Z"/><path d="M14 3.5V8h4.5"/><path d="M9 12.5h6M9 15.5h6M9 9.5h2.5"/></svg></span>Doc</div>
+    <div class="nav-item" data-view="calendar"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg></span>Calendar</div>
+    <div class="nav-item" data-view="attendance"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.5l2.4 2.4L15.8 9.5"/></svg></span>Attendance</div>
+    <div class="nav-item" data-view="inbox"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6 8.5 7 8.5-7"/></svg></span>Inbox</div>
+    <div class="nav-item" data-view="history"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></span>History</div>
+    <div class="nav-item" data-view="ai"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v3M12 17v3M4 12h3M17 12h3M6.5 6.5l2 2M15.5 15.5l2 2M17.5 6.5l-2 2M8.5 15.5l-2 2"/><circle cx="12" cy="12" r="2.3"/></svg></span>AI</div>
+    <div class="nav-item" data-view="update"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 13.66-5.66L20 8.5"/><path d="M20 4v4.5h-4.5"/><path d="M20 12a8 8 0 0 1-13.66 5.66L4 15.5"/><path d="M4 20v-4.5h4.5"/></svg></span>Update</div>
+    <div class="nav-item" data-view="help"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M9.3 9.3a2.7 2.7 0 1 1 3.9 2.4c-.8.5-1.2 1-1.2 1.9"/><circle cx="12" cy="16.4" r=".4" fill="currentColor" stroke="none"/></svg></span>Help</div>
+    <div class="nav-spacer"></div>
+    <div class="nav-item ai-toggle on" id="aiToggleBtn"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v3M12 17v3M4 12h3M17 12h3M6.5 6.5l2 2M15.5 15.5l2 2M17.5 6.5l-2 2M8.5 15.5l-2 2"/><circle cx="12" cy="12" r="2.3"/></svg></span>Ask AI</div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="title" id="topTitle">Dashboard</div>
+      <div class="right">
+        <div class="bell"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 14 6 10Z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg><span class="badge">2</span></div>
+        <div class="person-ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.3"/><path d="M5 19.5c1.2-3.3 3.8-5 7-5s5.8 1.7 7 5"/></svg></div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD: classes grid + upcoming/grades panel, responsive -->
+      <div class="view active" id="v-dashboard">
+        <div class="section-title">Dashboard</div>
+        <div class="dash-flex">
+          <div class="dash-flex-main">
+            <div class="class-grid" id="classGrid"></div>
+          </div>
+          <div class="dash-flex-side">
+            <div class="section-title" style="font-size:13px;">Upcoming & Grades</div>
+            <div class="card" id="dashList" style="padding:6px 12px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CLASS DETAIL -->
+      <div class="view" id="v-classdetail">
+        <span class="back-btn" onclick="go('dashboard')">‹ Back to Dashboard</span>
+        <div class="detail-banner" id="cd-banner">
+          <div class="left">
+            <div class="icon-xl" id="cd-icon">📐</div>
+            <div><h2 id="cd-title">AP Calculus AB</h2><div class="teacher" id="cd-teacher">Mr. Johnson</div></div>
+          </div>
+          <div class="detail-grade"><div class="g" id="cd-pct">90%</div><div class="l" id="cd-grade" style="font-size:13px;color:white;margin-top:2px;">A-</div><div class="l" style="margin-top:2px;">CURRENT GRADE</div></div>
+        </div>
+        <div class="section-title" style="font-size:13px;">Assignments</div>
+        <div id="sv-assignments"></div>
+        <div class="gdrive-card">
+          <div class="gdrive-head">🗂️ Google Drive — Class Files<button class="connect-drive-btn">＋ Connect Drive</button></div>
+          <div id="gdrive-files"></div>
+        </div>
+      </div>
+
+      <!-- ASSIGNMENT — full page -->
+      <div class="view" id="v-assignment">
+        <span class="back-btn" id="a-back-btn" onclick="go('classdetail')">‹ Back to Class</span>
+        <div class="section-title" id="m-title" style="margin-bottom:4px;">Assignment</div>
+        <div class="modal-meta" id="m-meta" style="margin-bottom:22px;">Due date · Points</div>
+
+        <div class="card" style="margin-bottom:14px;">
+          <h4 style="font-size:11px;letter-spacing:0.5px;color:var(--dim);text-transform:uppercase;margin-bottom:8px;">Requirements</h4>
+          <div class="modal-req" id="m-req"></div>
+        </div>
+
+        <div class="card" style="margin-bottom:14px;">
+          <h4 style="font-size:11px;letter-spacing:0.5px;color:var(--dim);text-transform:uppercase;margin-bottom:8px;">Turn-In Folder</h4>
+          <div class="turnin-folder" id="m-turnin"></div>
+          <div id="m-upload-wrap"></div>
+        </div>
+
+        <div class="card" id="m-grade-section"></div>
+      </div>
+
+      <!-- GOOGLE DOC VIEWER -->
+      <div class="view" id="v-docviewer">
+        <span class="back-btn" id="doc-back-btn" onclick="go('drive')">‹ Back to Drive</span>
+        <div class="gdoc-frame">
+          <div class="gdoc-topbar">
+            <div class="gdoc-topbar-left">
+              <span class="gdoc-icon">📄</span>
+              <div>
+                <div class="gdoc-filename" id="doc-filename">Untitled document</div>
+                <div class="gdoc-menu">File &nbsp; Edit &nbsp; View &nbsp; Insert &nbsp; Format &nbsp; Tools</div>
+              </div>
+            </div>
+            <button class="gdoc-share-btn">Share</button>
+          </div>
+          <div class="gdoc-toolbar">
+            <span>↶</span><span>↷</span><span>🖨</span><span>100%</span><span>Normal text</span><span>Arial</span><span>11</span>
+            <span><b>B</b></span><span><i>I</i></span><span><u>U</u></span><span>🎨</span><span>🔗</span>
+          </div>
+          <div class="gdoc-page-wrap">
+            <div class="gdoc-page" id="doc-content"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GOOGLE DRIVE consolidated -->
+      <div class="view" id="v-drive">
+        <div class="drive-toolbar">
+          <div class="section-title" style="margin-bottom:0;">Google Drive</div>
+          <input class="drive-search" placeholder="Search files across all classes...">
+        </div>
+        <div class="drive-folders" id="driveFolders"></div>
+        <div class="card">
+          <div class="section-title" style="font-size:13px;">Recent Files</div>
+          <div id="driveRecent"></div>
+        </div>
+      </div>
+
+      <!-- CALENDAR -->
+      <div class="view" id="v-calendar">
+        <div class="cal-header">
+          <div class="cal-month-title">July 2026</div>
+          <div class="cal-nav">
+            <div class="cal-nav-btn">‹</div>
+            <div class="cal-nav-btn">›</div>
+          </div>
+        </div>
+        <div class="cal-legend">
+          <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--red);"></span>Assignment due</span>
+          <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--amber);"></span>Due soon</span>
+          <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--purple);"></span>Absence</span>
+          <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--blue);"></span>Tardy</span>
+        </div>
+        <div class="cal-wrap">
+          <div class="cal-grid" id="calGrid"></div>
+        </div>
+      </div>
+
+      <!-- ATTENDANCE -->
+      <div class="view" id="v-attendance">
+        <div class="section-title">Attendance</div>
+        <div class="dash-layout">
+          <div class="dash-main">
+            <div class="card" id="attList" style="padding:6px 12px;"></div>
+          </div>
+          <div class="dash-side">
+            <div class="att-side-card">
+              <div class="att-side-head">✓ Overall</div>
+              <div class="att-ring-wrap">
+                <div class="att-ring"></div>
+                <div style="text-align:center;">
+                  <div class="att-side-num">92%</div>
+                  <div class="att-side-label">Attendance rate</div>
+                </div>
+              </div>
+              <div class="att-breakdown">
+                <div class="att-breakdown-row"><span>Present</span><span class="v">86</span></div>
+                <div class="att-breakdown-row"><span>Excused absence</span><span class="v">2</span></div>
+                <div class="att-breakdown-row"><span>Unexcused</span><span class="v">0</span></div>
+                <div class="att-breakdown-row"><span>Tardies</span><span class="v">3</span></div>
+              </div>
+              <span class="view-link" style="margin-top:10px;display:inline-block;" onclick="go('calendar')">See these days on Calendar →</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INBOX -->
+      <div class="view" id="v-inbox">
+        <div class="section-title">Inbox</div>
+        <div class="inbox-filter-bar" id="inboxFilterBar">
+          <button class="inbox-filter-chip active" data-filter="all" onclick="setInboxFilter('all')">All</button>
+          <button class="inbox-filter-chip" data-filter="unread" onclick="setInboxFilter('unread')">Unread</button>
+          <button class="inbox-filter-chip" data-filter="teacher" onclick="setInboxFilter('teacher')">Teachers</button>
+          <button class="inbox-filter-chip" data-filter="admin" onclick="setInboxFilter('admin')">School</button>
+        </div>
+        <div class="card" id="inboxList" style="padding:8px 12px;"></div>
+      </div>
+
+      <!-- AI PAGE -->
+      <div class="view" id="v-ai">
+        <div class="section-title">AI</div>
+        <div class="claude-window ai-page-window">
+          <div class="claude-titlebar">
+            <div class="claude-dot r"></div><div class="claude-dot y"></div><div class="claude-dot g"></div>
+            <div class="claude-titlebar-label">✦ Claude</div>
+          </div>
+          <div class="claude-body ai-page-log" id="aiPageLog">
+            <div class="claude-msg ai">
+              <div class="claude-avatar ai">✦</div>
+              <div><div class="claude-bubble">Ask me anything about your classes, grades, assignments, or attendance — I can see everything pulled in from Infinite Campus and Google Drive.</div></div>
+            </div>
+          </div>
+          <div class="ai-page-composer">
+            <div class="ai-page-composer-inner">
+              <div class="chip-row" style="margin-bottom:10px;justify-content:center;">
+                <span class="chip" onclick="askPage('chart')">Show my past assignments chart</span>
+                <span class="chip" onclick="askPage('nextweek')">What's due next week?</span>
+                <span class="chip" onclick="askPage('missing')">Show my missing days</span>
+                <span class="chip" onclick="askPage('trend')">Attendance trend?</span>
+              </div>
+              <div class="ai-input-row">
+                <input class="ai-input" id="aiPageInput" placeholder="Ask anything about your school data...">
+                <button class="ai-send" onclick="askPage()">➤</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="view" id="v-history"><div class="placeholder">History — past attendance and activity log.</div></div>
+      <!-- UPDATE -->
+      <div class="view" id="v-update">
+        <div class="section-title">Update</div>
+
+        <div class="card" style="margin-bottom:16px;">
+          <div class="update-source-row">
+            <div class="update-source-left">
+              <span class="update-source-icon">🏫</span>
+              <div>
+                <div class="update-source-name">Infinite Campus</div>
+                <div class="update-source-time" id="sync-time-ic">Last synced 42 minutes ago</div>
+              </div>
+            </div>
+            <button class="sync-btn" id="sync-btn-ic" onclick="syncSource('ic')">Sync Now</button>
+          </div>
+          <div class="update-source-row">
+            <div class="update-source-left">
+              <span class="update-source-icon">🗂️</span>
+              <div>
+                <div class="update-source-name">Google Drive</div>
+                <div class="update-source-time" id="sync-time-drive">Last synced 12 minutes ago</div>
+              </div>
+            </div>
+            <button class="sync-btn" id="sync-btn-drive" onclick="syncSource('drive')">Sync Now</button>
+          </div>
+          <button class="sync-btn-all" onclick="syncSource('all')">🔄 Sync Everything Now</button>
+        </div>
+
+        <div class="section-title" style="font-size:13px;">What's New</div>
+        <div class="card" id="changelogCard"></div>
+      </div>
+
+      <div class="view" id="v-help"><div class="placeholder">Help — support and setup resources.</div></div>
+
+    </div>
+
+    <div class="ai-footer" id="aiFooter">
+      <div class="ai-head">
+        <span class="lbl">✨ Ask Claude — always available</span>
+        <button class="ai-collapse-btn" onclick="toggleAI()">Collapse ▾</button>
+      </div>
+      <div class="ai-input-row">
+        <input class="ai-input" id="askInput" placeholder="Ask anything about your school data...">
+        <button class="ai-send" onclick="ask()">➤</button>
+      </div>
+      <div class="chip-row">
+        <span class="chip" onclick="ask('chart')">Show my past assignments chart</span>
+        <span class="chip" onclick="ask('nextweek')">What's due next week?</span>
+        <span class="chip" onclick="ask('missing')">Show my missing days</span>
+        <span class="chip" onclick="ask('trend')">Attendance trend?</span>
+      </div>
+      <div class="ai-response" id="askResp"></div>
+    </div>
+  </div>
+</div>
+
+<!-- DAY DETAIL MODAL -->
+<div class="modal-overlay" id="dayModal" onclick="if(event.target===this) closeDayModal()">
+  <div class="modal-box" style="width:380px;">
+    <span class="modal-close" onclick="closeDayModal()">✕</span>
+    <div class="modal-title" id="d-title">July 24</div>
+    <div class="modal-meta">What's happening this day</div>
+    <div id="d-events"></div>
+  </div>
+</div>
+
+<input type="file" id="globalFileInput" style="display:none;">
+
+<script>
+const titles = {dashboard:"Dashboard",classdetail:"Class Detail",assignment:"Assignment",drive:"Google Drive",docviewer:"Document",calendar:"Calendar",attendance:"Attendance",inbox:"Inbox",ai:"Ask AI",update:"Update",history:"History",help:"Help"};
+let currentClassId = null;
+let lastOpenedDoc = null; // {filename, className} — remembers what to show if Doc is opened from the sidebar
+let pendingUploadTarget = null; // {classId, idx, context}
+
+function triggerUpload(classId, idx, context){
+  pendingUploadTarget = {classId, idx, context};
+  document.getElementById('globalFileInput').click();
+}
+
+document.getElementById('globalFileInput').addEventListener('change', function(e){
+  const file = e.target.files[0];
+  e.target.value = ''; // reset so selecting the same file again still fires change
+  if(!file || !pendingUploadTarget) return;
+  handleFileUpload(file);
+});
+
+function handleFileUpload(file){
+  const {classId, idx, context} = pendingUploadTarget;
+  const c = classes[classId];
+  const a = c.upcoming[idx];
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  const icon = ext==='pdf' ? '📄' : (ext==='doc'||ext==='docx') ? '📝' : (ext==='png'||ext==='jpg'||ext==='jpeg') ? '🖼️' : '📎';
+
+  a.turnIn = [{name:file.name, type:icon, via:'Google Drive'}];
+  a.status = 'submitted';
+  a.aiEstimate = null; // clear any old estimate — it's a new file, so "Get Est. Grade" reappears
+  if(whatIfDefaults[classId]) delete whatIfDefaults[classId][idx];
+  if(whatIfState[classId]) delete whatIfState[classId][idx];
+
+  if(context==='page'){
+    openAssignment(classId, 'upcoming', idx);
+  } else {
+    openClass(classId);
+  }
+}
+
+const classes = {
+  calc:{title:"AP Calculus AB",icon:"📐",color:"#3a5f9e",teacher:"Mr. Johnson",grade:"A-",pct:"90%",gradeClass:"a",
+    upcoming:[
+      {name:"Problem Set 7",due:"Due Today",cls:"hot",status:"upcoming",points:30,
+        req:"Complete problems 1–15 in section 7.2, showing all derivative work. Submit as a single PDF."},
+      {name:"Derivatives Quiz",due:"Due Tomorrow",cls:"hot",status:"upcoming",points:25,
+        req:"Covers chain rule and implicit differentiation. 10 questions, 20 minutes, open notes."},
+      {name:"Unit 6 Review",due:"Due in 5 days",cls:"soon",status:"upcoming",points:20,
+        req:"Review packet covering all Unit 6 topics ahead of the test."},
+      {name:"Related Rates Worksheet",due:"Submitted — awaiting grade",cls:"amber",status:"submitted",points:20,
+        req:"Word problems 1–8 on related rates. Show setup and units on every answer.",
+        turnIn:[{name:"related_rates_hw.pdf",type:"📄",via:"Google Drive"}],
+        aiEstimate:{pct:"85%",letter:"B",note:"Work looks complete and units are shown throughout, but two answers on problems 5 and 7 don't match the expected setup — worth double-checking before it's graded."}},
+      {name:"Limits Practice Set 2",due:"Submitted — awaiting grade",cls:"amber",status:"submitted",points:15,
+        req:"Practice set on one-sided limits and limits at infinity.",
+        turnIn:[{name:"limits_set2.pdf",type:"📄",via:"Google Drive"}],
+        aiEstimate:{pct:"96%",letter:"A",note:"Clean, fully worked answers with correct notation throughout — should come back close to full marks."}},
+    ],
+    past:[
+      {name:"Limits Worksheet",score:"20/20",status:"graded"},
+      {name:"Chapter 4 Test",score:"88/100",status:"graded"},
+      {name:"Related Rates Lab",score:"18/20",status:"graded"}
+    ],
+    drive:[{name:"Lecture Notes — Unit 6.pdf",type:"📄"},{name:"Practice Problems.docx",type:"📝"},{name:"Formula Sheet.pdf",type:"📄"}]},
+  chem:{title:"Chemistry",icon:"🧪",color:"#5e9e5a",teacher:"Mrs. Smith",grade:"B+",pct:"87%",gradeClass:"b",
+    upcoming:[
+      {name:"Lab Report — Rates",due:"MISSING",cls:"hot",status:"upcoming",points:25,
+        req:"Write up your reaction rates lab: hypothesis, data table, graph, and conclusion."},
+      {name:"Chapter 6 Quiz Review",due:"Due Tomorrow",cls:"hot",status:"upcoming",points:10,
+        req:"Review questions covering reaction rates and equilibrium."},
+      {name:"Unit Test",due:"Due in 5 days",cls:"soon",status:"upcoming",points:100,
+        req:"Covers Chapters 5–6, multiple choice and free response."},
+      {name:"Periodic Trends Worksheet",due:"Submitted — awaiting grade",cls:"amber",status:"submitted",points:15,
+        req:"Fill in trend arrows and explain atomic radius, ionization energy, and electronegativity trends.",
+        turnIn:[{name:"periodic_trends.docx",type:"📝",via:"Google Drive"}],
+        aiEstimate:{pct:"78%",letter:"C+",note:"Trend directions are correct, but the electronegativity explanation is thin — likely to lose a couple points on reasoning."}}
+    ],
+    past:[{name:"Titration Lab",score:"17/20",status:"graded"},{name:"Periodic Table Quiz",score:"9/10",status:"graded"}],
+    drive:[{name:"Lab Safety Guidelines.pdf",type:"📄"},{name:"Rates Lab Template.docx",type:"📝"}]},
+  eng:{title:"English 11",icon:"📖",color:"#9e5a7f",teacher:"Ms. Davis",grade:"A",pct:"93%",gradeClass:"a",
+    upcoming:[
+      {name:"Essay Draft — Symbolism",due:"Due in 2 days",cls:"soon",status:"upcoming",points:50,
+        req:"3-page draft analyzing symbolism in the assigned novel. MLA format, works cited included."},
+      {name:"Reading Journal Entry 6",due:"Submitted — awaiting grade",cls:"amber",status:"submitted",points:10,
+        req:"One-page reflection on chapters 9–12.",
+        turnIn:[{name:"journal_entry6.pdf",type:"📄",via:"Google Drive"}],
+        aiEstimate:{pct:"92%",letter:"A-",note:"Thoughtful reflection with good textual references — reads like your strongest journal entry this unit."}}
+    ],
+    past:[{name:"Poetry Analysis",score:"95/100",status:"graded"},{name:"Reading Quiz Ch.9",score:"10/10",status:"graded"}],
+    drive:[{name:"Essay Rubric.pdf",type:"📄"},{name:"Novel — Chapters 8-12.pdf",type:"📄"}]},
+  hist:{title:"US History",icon:"🏛️",color:"#9e8a4a",teacher:"Mr. Brown",grade:"A-",pct:"90%",gradeClass:"a",
+    upcoming:[
+      {name:"Reading Response 4",due:"MISSING",cls:"hot",status:"upcoming",points:15,
+        req:"Half-page response connecting the reading to a modern parallel."},
+      {name:"DBQ Outline",due:"Due in 3 days",cls:"soon",status:"upcoming",points:20,
+        req:"Thesis and 3-paragraph outline using the provided source packet."}
+    ],
+    past:[{name:"WWII Test",score:"91/100",status:"graded"}],
+    drive:[{name:"DBQ Source Packet.pdf",type:"📄"}]},
+  span:{title:"Spanish III",icon:"🌐",color:"#4a8e9e",teacher:"Sra. Martinez",grade:"A",pct:"94%",gradeClass:"a",
+    upcoming:[
+      {name:"Vocabulary Project",due:"Due in 5 days",cls:"soon",status:"upcoming",points:30,
+        req:"Create a themed vocabulary poster with 20 new words used in original sentences."},
+      {name:"Verb Conjugation Set",due:"Submitted — awaiting grade",cls:"amber",status:"submitted",points:15,
+        req:"Preterite vs. imperfect practice set, 20 sentences.",
+        turnIn:[{name:"verb_practice.pdf",type:"📄",via:"Google Drive"}],
+        aiEstimate:{pct:"90%",letter:"A-",note:"Consistent and mostly accurate tense usage — a couple of irregular verbs look off, worth a quick check."}}
+    ],
+    past:[{name:"Ch.5 Verb Quiz",score:"18/20",status:"graded"}],
+    drive:[{name:"Vocab List Unit 5.docx",type:"📝"}]}
+};
+
+/* WHAT-IF GRADE CALCULATOR state — declared before renderDash() uses it below */
+const whatIfState = {};    // whatIfState[classId][assignmentIdx] = current hypothetical pct
+const whatIfDefaults = {}; // whatIfDefaults[classId][assignmentIdx] = original default pct (AI estimate or class avg)
+const aiEstimatesOn = {};  // aiEstimatesOn[classId] = true/false — toggle showing AI grade estimates for that class
+
+function toggleAiEstimates(id){
+  aiEstimatesOn[id] = aiEstimatesOn[id]===false ? true : false;
+  openClass(id);
+}
+
+function pctToLetter(pct){
+  if(pct>=97) return 'A+'; if(pct>=93) return 'A'; if(pct>=90) return 'A-';
+  if(pct>=87) return 'B+'; if(pct>=83) return 'B'; if(pct>=80) return 'B-';
+  if(pct>=77) return 'C+'; if(pct>=73) return 'C'; if(pct>=70) return 'C-';
+  if(pct>=67) return 'D+'; if(pct>=60) return 'D';
+  return 'F';
+}
+
+function computeProjectedForClass(id){
+  const c = classes[id];
+  if(aiEstimatesOn[id]===false){
+    return {pct:Math.round(parseFloat(c.pct)), letter:c.grade};
+  }
+  let earned=0, total=0;
+  c.past.forEach(a=>{
+    const m = a.score.match(/([\d.]+)\s*\/\s*([\d.]+)/);
+    if(m){ earned += parseFloat(m[1]); total += parseFloat(m[2]); }
+  });
+  c.upcoming.forEach((a,i)=>{
+    if(a.points){
+      const pct = whatIfState[id] && whatIfState[id][i]!==undefined ? whatIfState[id][i] : (whatIfDefaults[id] ? whatIfDefaults[id][i] : parseFloat(c.pct));
+      earned += (pct/100) * a.points;
+      total += a.points;
+    }
+  });
+  const projected = total>0 ? (earned/total)*100 : parseFloat(c.pct);
+  return {pct:Math.round(projected), letter:pctToLetter(projected)};
+}
+
+/* DASHBOARD: accordion rows */
+function renderDash(){
+  const el = document.getElementById('dashList');
+  el.innerHTML = Object.entries(classes).map(([id,c])=>{
+    const next = c.upcoming[0];
+    const proj = computeProjectedForClass(id);
+    const gc = proj.pct>=80?'a':'b';
+    return `
+    <div class="class-accordion" id="acc-${id}">
+      <div class="class-summary-row" onclick="toggleAccordion('${id}')">
+        <div class="cs-left">
+          <div class="cs-icon" style="background:${c.color};">${c.icon}</div>
+          <div>
+            <div class="cs-name">${c.title}</div>
+            <div class="cs-next ${next && next.cls==='hot' ? 'hot':''}" onclick="event.stopPropagation(); openClass('${id}')" style="text-decoration:underline;text-decoration-color:transparent;" onmouseover="this.style.textDecorationColor='currentColor'" onmouseout="this.style.textDecorationColor='transparent'">${next ? next.name+' — '+next.due : 'Nothing upcoming'}</div>
+          </div>
+        </div>
+        <div class="cs-right">
+          <span class="cs-count">${c.upcoming.length} upcoming</span>
+          <div class="grade-stack"><span class="gs-pct ${gc}">${proj.pct}%</span><span class="gs-ltr">${proj.letter}</span></div>
+          <span class="cs-chevron">▶</span>
+        </div>
+      </div>
+      <div class="cs-dropdown">
+        <div class="cs-dropdown-inner">
+          ${c.upcoming.map(a=>`<div class="cs-assignment-row"><span>${a.name}${a.aiEstimate && aiEstimatesOn[id]!==false ? ` <span class="ai-est-inline">🤖 Est: ${a.aiEstimate.letter} (${a.aiEstimate.pct})</span>` : ''}</span><span class="due ${a.cls}">${a.due}</span></div>`).join('') || '<div style="color:var(--dim);font-size:12px;">Nothing upcoming</div>'}
+          <span class="cs-view-link" onclick="event.stopPropagation(); openClass('${id}')">Open full class page →</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+renderDash();
+
+function toggleAccordion(id){
+  const acc = document.getElementById('acc-'+id);
+  acc.classList.toggle('open');
+}
+
+function refreshProjectedSummary(id){
+  const {pct, letter} = computeProjectedForClass(id);
+  const pctEl = document.getElementById('proj-pct-'+id);
+  const ltrEl = document.getElementById('proj-ltr-'+id);
+  if(pctEl){ pctEl.textContent = pct+'%'; ltrEl.textContent = `(${letter})`; }
+  // Also reflect live on the class banner at the top of the page
+  const bannerPct = document.getElementById('cd-pct');
+  const bannerLtr = document.getElementById('cd-grade');
+  if(bannerPct && currentClassId===id){ bannerPct.textContent = pct+'%'; bannerLtr.textContent = letter; }
+}
+
+function updateAssignWhatIf(classId, idx, val){
+  whatIfState[classId] = whatIfState[classId] || {};
+  whatIfState[classId][idx] = parseFloat(val);
+  document.getElementById(`assign-pct-${classId}-${idx}`).textContent = val+'%';
+  document.getElementById(`assign-ltr-${classId}-${idx}`).textContent = `(${pctToLetter(val)})`;
+  refreshProjectedSummary(classId);
+}
+
+function resetAssignWhatIf(classId, idx){
+  const original = whatIfDefaults[classId][idx];
+  whatIfState[classId][idx] = original;
+  document.getElementById(`assign-slider-${classId}-${idx}`).value = original;
+  document.getElementById(`assign-pct-${classId}-${idx}`).textContent = original+'%';
+  document.getElementById(`assign-ltr-${classId}-${idx}`).textContent = `(${pctToLetter(original)})`;
+  refreshProjectedSummary(classId);
+}
+
+function resetAllWhatIf(classId){
+  whatIfState[classId] = { ...whatIfDefaults[classId] };
+  openClass(classId); // full re-render is simplest and keeps every slider/badge in sync
+}
+
+/* Simulates asking Claude/Ollama to generate an estimate for an assignment that doesn't have one yet */
+function generateEstimateForAssignment(classId, idx){
+  const c = classes[classId];
+  const a = c.upcoming[idx];
+  whatIfDefaults[classId] = whatIfDefaults[classId] || {};
+  whatIfState[classId] = whatIfState[classId] || {};
+  let pastEarned=0, pastTotal=0;
+  c.past.forEach(p=>{
+    const m = p.score.match(/([\d.]+)\s*\/\s*([\d.]+)/);
+    if(m){ pastEarned += parseFloat(m[1]); pastTotal += parseFloat(m[2]); }
+  });
+  const baseline = pastTotal>0 ? (pastEarned/pastTotal)*100 : parseFloat(c.pct);
+  const jitter = Math.round((Math.random()*16)-8); // +/- 8 points
+  const pct = Math.max(55, Math.min(99, Math.round(baseline + jitter)));
+  const letter = pctToLetter(pct);
+  const hasFile = a.turnIn && a.turnIn.length;
+  const note = hasFile
+    ? `Based on the file you turned in, compared against how you've scored on similar ${c.title} work.`
+    : `No file turned in yet, so this is based on your track record in ${c.title} so far — turn something in for a more accurate read.`;
+
+  a.aiEstimate = {pct: pct+'%', letter, note};
+  whatIfDefaults[classId][idx] = pct;
+  if(whatIfState[classId][idx]===undefined) whatIfState[classId][idx] = pct;
+}
+
+function getAiEstimate(classId, idx){
+  const btn = document.getElementById(`get-est-${classId}-${idx}`);
+  if(btn){ btn.textContent = '🤖 Analyzing…'; btn.classList.add('loading'); btn.disabled = true; }
+  setTimeout(()=>{
+    generateEstimateForAssignment(classId, idx);
+    openClass(classId); // re-render the class page to show the new badge, slider, and updated projected grade
+  }, 700);
+}
+
+function getAiEstimateOnPage(classId, idx){
+  const btn = document.getElementById(`get-est-page-${classId}-${idx}`);
+  if(btn){ btn.textContent = '🤖 Analyzing…'; btn.classList.add('loading'); btn.disabled = true; }
+  setTimeout(()=>{
+    generateEstimateForAssignment(classId, idx);
+    openAssignment(classId, 'upcoming', idx); // stay on this same full-page view, just refreshed
+  }, 700);
+}
+
+/* CLASSES grid */
+function renderClassGrid(){
+  const grid = document.getElementById('classGrid');
+  grid.innerHTML = Object.entries(classes).map(([id,c])=>{
+    const next = c.upcoming[0];
+    const proj = computeProjectedForClass(id);
+    const gc = proj.pct>=90?'a':proj.pct>=80?'a':'b';
+    return `
+    <div class="class-card" onclick="openClass('${id}')">
+      <div class="class-banner" style="background:${c.color};"><span class="icon-lg">${c.icon}</span><span class="cname">${c.title}</span></div>
+      <div class="class-body">
+        <div class="class-stat-row"><div class="grade-stack"><span class="gs-pct ${gc}" style="font-size:20px;">${proj.pct}%</span><span class="gs-ltr">${proj.letter}</span></div><span style="font-size:11px;color:var(--dim);">${c.upcoming.length} upcoming</span></div>
+        <div class="up-next">Next up:</div>
+        <div class="up-next-title">${next ? next.name : 'Nothing due'}</div>
+        ${next ? `<div class="up-next-due ${next.cls}">${next.due}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+renderClassGrid();
+
+function openClass(id){
+  const c = classes[id];
+  currentClassId = id;
+  document.getElementById('cd-title').textContent = c.title;
+  document.getElementById('cd-teacher').textContent = c.teacher;
+  document.getElementById('cd-icon').textContent = c.icon;
+  document.getElementById('cd-banner').style.background = c.color;
+
+  // Init per-assignment what-if state for every gradeable upcoming item —
+  // submitted work defaults to its AI estimate, not-yet-due work defaults to the current class average.
+  whatIfDefaults[id] = whatIfDefaults[id] || {};
+  whatIfState[id] = whatIfState[id] || {};
+  c.upcoming.forEach((a,i)=>{
+    if(a.points && whatIfDefaults[id][i]===undefined){
+      const def = a.aiEstimate ? parseFloat(a.aiEstimate.pct) : Math.round(parseFloat(c.pct));
+      whatIfDefaults[id][i] = def;
+      if(whatIfState[id][i]===undefined) whatIfState[id][i] = def;
+    }
+  });
+
+  const estOn = aiEstimatesOn[id]!==false;
+  const proj = computeProjectedForClass(id);
+  document.getElementById('cd-pct').textContent = proj.pct+'%';
+  document.getElementById('cd-grade').textContent = proj.letter;
+
+  // Merge upcoming + past into one accordion list
+  const merged = [
+    ...c.upcoming.map((a,i)=>({...a, list:'upcoming', idx:i})),
+    ...c.past.map((a,i)=>({...a, list:'past', idx:i}))
+  ];
+
+  const summaryHtml = `
+    <div class="card" style="margin-bottom:14px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div style="font-size:11px;color:var(--dim);letter-spacing:0.4px;text-transform:uppercase;">Projected Grade</div>
+        <div><span class="whatif-pct" id="proj-pct-${id}" style="font-size:20px;">${proj.pct}%</span> <span class="whatif-ltr" id="proj-ltr-${id}">(${proj.letter})</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <button class="ai-est-toggle ${estOn?'on':'off'}" onclick="toggleAiEstimates('${id}')">
+          <span class="ai-est-toggle-dot"></span>🤖 AI Estimates: ${estOn?'ON':'OFF'}
+        </button>
+        <button class="whatif-reset" onclick="resetAllWhatIf('${id}')">Reset All Grades</button>
+      </div>
+    </div>`;
+
+  document.getElementById('sv-assignments').innerHTML = summaryHtml + merged.map((a,k)=>{
+    const statusTag = a.status==='graded' ? '<span class="status-tag graded">GRADED</span>'
+      : a.status==='submitted' ? '<span class="status-tag pending">PENDING GRADE</span>'
+      : '<span class="status-tag" style="background:rgba(74,143,232,0.14);color:var(--blue);">UPCOMING</span>';
+    const rightVal = a.status==='graded'
+      ? `<span class="cd-acc-score">${a.score}</span>`
+      : `<span class="cd-acc-due ${a.cls}">${a.due}</span>`;
+    const estBadge = (a.aiEstimate && estOn) ? `<span class="est-grade-badge">🤖 Est. Grade: ${a.aiEstimate.letter} (${a.aiEstimate.pct})</span>` : '';
+    const getEstBtn = (!a.aiEstimate && estOn && a.list==='upcoming') ? `<button class="get-est-btn" id="get-est-${id}-${a.idx}" onclick="event.stopPropagation(); getAiEstimate('${id}', ${a.idx})">🤖 Get Est. Grade</button>` : '';
+
+    const showSlider = estOn && a.list==='upcoming' && a.points;
+    const sliderVal = showSlider ? whatIfState[id][a.idx] : null;
+    const sliderLetter = showSlider ? pctToLetter(sliderVal) : '';
+    const sliderHeading = a.aiEstimate ? '🎚 What-If Grade — this assignment only' : '🎚 What-If Grade — try a hypothetical score';
+    const resetLabel = a.aiEstimate ? 'Reset to AI estimate' : 'Reset to class average';
+    const whatIfHtml = showSlider ? `
+          <h5>${sliderHeading}</h5>
+          <input type="range" min="0" max="100" value="${sliderVal}" class="whatif-slider"
+            id="assign-slider-${id}-${a.idx}"
+            oninput="updateAssignWhatIf('${id}', ${a.idx}, this.value)">
+          <div class="whatif-result">
+            <div><span class="whatif-pct" id="assign-pct-${id}-${a.idx}" style="font-size:15px;">${sliderVal}%</span> <span class="whatif-ltr" id="assign-ltr-${id}-${a.idx}">(${sliderLetter})</span></div>
+            <button class="whatif-reset" onclick="event.stopPropagation(); resetAssignWhatIf('${id}', ${a.idx})">${resetLabel}</button>
+          </div>` : '';
+
+
+    return `
+    <div class="cd-accordion" id="cd-acc-${k}">
+      <div class="cd-acc-head" onclick="toggleCdAccordion(${k})">
+        <div class="cd-acc-left">
+          <span class="cd-chevron">▶</span>
+          <span class="cd-acc-name">${a.name}</span>
+          ${statusTag}
+        </div>
+        <div class="cd-acc-right">${estBadge}${rightVal}</div>
+      </div>
+      <div class="cd-acc-body">
+        <div class="cd-acc-inner">
+          <h5>Requirements</h5>
+          <div class="cd-acc-req">${a.req || 'No additional requirements listed.'}</div>
+          ${a.turnIn ? `<h5>Turn-In Folder</h5>${a.turnIn.map(f=>`<div style="font-size:12px;color:var(--dim);">${f.type} ${f.name} — via ${f.via}</div>`).join('')}` : ''}
+          ${a.list==='upcoming' ? `<button class="upload-btn" onclick="event.stopPropagation(); triggerUpload('${id}', ${a.idx}, 'accordion')">⬆ ${a.turnIn ? 'Replace File' : 'Upload File'}</button>` : ''}
+          ${getEstBtn}
+          ${(a.aiEstimate && estOn) ? `<h5>Claude's Estimated Grade</h5><div style="font-size:12px;color:#b89bf5;">${a.aiEstimate.pct} (${a.aiEstimate.letter}) — ${a.aiEstimate.note}</div>` : ''}
+          ${whatIfHtml}
+          <span class="cs-view-link" onclick="event.stopPropagation(); openAssignment('${id}','${a.list}',${a.idx})">Open full details →</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('gdrive-files').innerHTML = c.drive.map(f=>`<div class="gdrive-file"><span class="fname">${f.type} ${f.name}</span><button class="gdrive-btn" onclick="event.stopPropagation(); openDoc('${f.name.replace(/'/g,"\\'")}','${c.title}')">Open</button></div>`).join('');
+  go('classdetail');
+  document.getElementById('topTitle').textContent = c.title;
+}
+
+function toggleCdAccordion(k){
+  const acc = document.getElementById('cd-acc-'+k);
+  acc.classList.toggle('open');
+}
+
+/* Builds a chat-style history fragment for one class (used on the AI sidebar page) */
+function buildClassAiHistory(id){
+  const c = classes[id];
+  const submitted = [...c.upcoming, ...c.past].filter(a=>a.aiEstimate);
+  if(!submitted.length) return '';
+  let msgs = `<div class="ai-history-divider">${c.icon} ${c.title}</div>`;
+  submitted.forEach(a=>{
+    msgs += `
+    <div class="claude-msg user">
+      <div class="claude-avatar user">You</div>
+      <div><div class="claude-bubble">What do you think I'll get on "${a.name}"?</div></div>
+    </div>
+    <div class="claude-msg ai">
+      <div class="claude-avatar ai">✦</div>
+      <div>
+        <div class="claude-bubble">Based on the file you turned in, I'd estimate around <strong>${a.aiEstimate.pct} (${a.aiEstimate.letter})</strong>. ${a.aiEstimate.note}</div>
+        <div class="claude-timestamp">Today, 8:0${Math.floor(Math.random()*5)+3} AM</div>
+      </div>
+    </div>`;
+  });
+  return msgs;
+}
+
+function openAssignment(classId, list, idx){
+  const c = classes[classId];
+  const a = c[list][idx];
+  document.getElementById('m-title').textContent = a.name;
+  document.getElementById('m-meta').textContent = `${c.title} · ${a.due || a.score} · ${a.points ? a.points+' pts' : ''}`;
+  document.getElementById('m-req').textContent = a.req || 'No additional requirements listed for this assignment.';
+
+  const turninBox = document.getElementById('m-turnin');
+  if(a.turnIn && a.turnIn.length){
+    turninBox.innerHTML = a.turnIn.map(f=>`
+      <div class="turnin-file"><span>${f.type} ${f.name}</span><span style="color:var(--dim);font-size:11px;">via ${f.via}</span></div>
+    `).join('');
+  } else if(list==='past'){
+    turninBox.innerHTML = `<div class="turnin-file"><span>📄 ${a.name.toLowerCase().replace(/\s+/g,'_')}.pdf</span><span style="color:var(--dim);font-size:11px;">via Google Drive</span></div>`;
+  } else {
+    turninBox.innerHTML = `<div class="turnin-empty">Nothing turned in yet — upload it here once it's ready.</div>`;
+  }
+
+  const uploadWrap = document.getElementById('m-upload-wrap');
+  uploadWrap.innerHTML = list==='upcoming'
+    ? `<button class="upload-btn" style="margin-top:10px;" onclick="triggerUpload('${classId}', ${idx}, 'page')">⬆ ${a.turnIn && a.turnIn.length ? 'Replace File' : 'Upload File'}</button>`
+    : '';
+
+  const gradeSection = document.getElementById('m-grade-section');
+  if(list==='past'){
+    gradeSection.innerHTML = `
+      <h4 style="font-size:11px;letter-spacing:0.5px;color:var(--dim);text-transform:uppercase;margin-bottom:8px;">Grade</h4>
+      <div class="actual-grade-box"><div class="actual-grade-num">${a.score}</div></div>`;
+  } else if(a.aiEstimate){
+    gradeSection.innerHTML = `
+      <h4 style="font-size:11px;letter-spacing:0.5px;color:var(--dim);text-transform:uppercase;margin-bottom:8px;">Claude's Estimated Grade</h4>
+      <div class="ai-grade-box">
+        <div class="ai-grade-head">🤖 Based on your turned-in file</div>
+        <div class="ai-grade-num">${a.aiEstimate.pct} · ${a.aiEstimate.letter}</div>
+        <div class="ai-grade-note">${a.aiEstimate.note}</div>
+      </div>`;
+  } else {
+    gradeSection.innerHTML = `
+      <h4 style="font-size:11px;letter-spacing:0.5px;color:var(--dim);text-transform:uppercase;margin-bottom:8px;">Grade</h4>
+      <div class="turnin-empty" style="margin-bottom:10px;">No grade yet — Claude can give you an estimate based on ${a.turnIn && a.turnIn.length ? 'the file you turned in' : 'your track record in this class'}.</div>
+      <button class="get-est-btn" id="get-est-page-${classId}-${idx}" onclick="getAiEstimateOnPage('${classId}', ${idx})">🤖 Get Est. Grade</button>`;
+  }
+
+  document.getElementById('a-back-btn').setAttribute('onclick', `go('classdetail')`);
+  go('assignment');
+  document.getElementById('topTitle').textContent = a.name;
+}
+
+/* GOOGLE DRIVE consolidated */
+function renderDrive(){
+  const folders = document.getElementById('driveFolders');
+  folders.innerHTML = Object.entries(classes).map(([id,c])=>`
+    <div class="drive-folder" onclick="openClass('${id}')">
+      <div class="fic">📁</div><div class="fname2">${c.title}</div><div class="fcount">${c.drive.length} files</div>
+    </div>`).join('');
+
+  const recent = document.getElementById('driveRecent');
+  const allFiles = [];
+  Object.entries(classes).forEach(([id,c])=>c.drive.forEach(f=>allFiles.push({...f, className:c.title})));
+  recent.innerHTML = allFiles.map(f=>`
+    <div class="drive-recent-item" onclick="openDoc('${f.name.replace(/'/g,"\\'")}','${f.className}')" style="cursor:pointer;">
+      <span class="dname">${f.type} ${f.name}</span>
+      <span class="dclass">${f.className}</span>
+    </div>`).join('');
+}
+renderDrive();
+
+function openDoc(filename, className){
+  lastOpenedDoc = {filename, className};
+  document.getElementById('doc-filename').textContent = filename;
+  document.getElementById('doc-back-btn').setAttribute('onclick', `go('drive')`);
+
+  // Try to find matching content from an assignment's requirements for a more realistic preview
+  let bodyParagraphs = [
+    `This document was pulled in automatically from Google Drive as part of your ${className} materials.`,
+    `Once connected, Claude can read the full content of this file to answer questions, cross-reference it against assignment requirements, and factor it into grade estimates.`,
+    `This is a lightweight preview — for full editing, open the file directly in Google Docs.`
+  ];
+  for(const c of Object.values(classes)){
+    const allA = [...c.upcoming, ...c.past];
+    const match = allA.find(a => a.turnIn && a.turnIn.some(f=>f.name===filename));
+    if(match && match.req){
+      bodyParagraphs = [match.req, `Turned in for ${className}. ${match.aiEstimate ? "Claude's read-through: "+match.aiEstimate.note : ''}`];
+      break;
+    }
+  }
+
+  document.getElementById('doc-content').innerHTML = `
+    <h1>${filename.replace(/\.(pdf|docx)$/i,'')}</h1>
+    <div class="gdoc-meta">${className} · Last edited today · Shared with Claude</div>
+    ${bodyParagraphs.map(p=>`<p>${p}</p>`).join('')}
+  `;
+
+  go('docviewer');
+  document.getElementById('navDocBtn').classList.add('active');
+  document.getElementById('topTitle').textContent = filename;
+}
+
+/* CALENDAR — fake July 2026 grid, Apple-style, clickable days */
+const calEvents = {
+  2:[{t:'Calc Problem Set 7',c:''}], 3:[{t:'Chem Lab Report',c:''}],
+  5:[{t:'Essay Draft',c:'amber'}], 9:[{t:'DBQ Outline',c:'amber'}],
+  12:[{t:'Unit 6 Review',c:'amber'}],
+  7:[{t:'Missed — Field Trip',c:'purple'}],
+  15:[{t:'Missed — Sick',c:'purple'}],
+  11:[{t:'Tardy — Traffic',c:'blue2'}],
+  18:[{t:'Tardy — Overslept',c:'blue2'}],
+  22:[{t:'Tardy — Dr. appt',c:'blue2'}],
+  24:[{t:'Derivatives Quiz',c:''},{t:'Chem Quiz Review',c:''}]
+};
+
+function renderCalendar(){
+  const grid = document.getElementById('calGrid');
+  const dows = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let html = dows.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  const startOffset = 3;
+  const daysInMonth = 31;
+  for(let i=0;i<startOffset;i++) html += `<div class="cal-day empty"></div>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const isToday = d===24;
+    const evs = calEvents[d] || [];
+    const shown = evs.slice(0,2);
+    const extra = evs.length - shown.length;
+    html += `<div class="cal-day ${isToday?'today':''}" onclick="openDay(${d})">
+      <div class="dnum">${d}</div>
+      ${shown.map(e=>`<span class="cal-dot ${e.c}">${e.t}</span>`).join('')}
+      ${extra>0 ? `<div class="cal-more">+${extra} more</div>` : ''}
+    </div>`;
+  }
+  grid.innerHTML = html;
+}
+renderCalendar();
+
+function openDay(d){
+  const evs = calEvents[d] || [];
+  document.getElementById('d-title').textContent = `July ${d}${d===24 ? ' — Today' : ''}`;
+  document.getElementById('d-events').innerHTML = evs.length ? evs.map(e=>`
+    <div class="a-detail-item" style="cursor:default;">
+      <span>${e.t}</span>
+    </div>`).join('') : '<div class="placeholder">Nothing scheduled this day.</div>';
+  document.getElementById('dayModal').classList.add('show');
+}
+function closeDayModal(){
+  document.getElementById('dayModal').classList.remove('show');
+}
+
+/* ATTENDANCE — list with reasons */
+function renderAttendance(){
+  const records = [
+    {date:'Jul 7',type:'Missed',reason:'Field Trip — Science Museum',excused:true},
+    {date:'Jul 15',type:'Missed',reason:'Sick',excused:true},
+    {date:'Jul 11',type:'Tardy',reason:'Traffic',excused:false},
+    {date:'Jul 18',type:'Tardy',reason:'Overslept',excused:false},
+    {date:'Jul 22',type:'Tardy',reason:'Doctor appointment (early release)',excused:true},
+  ];
+  document.getElementById('attList').innerHTML = records.map(r=>`
+    <div class="cs-assignment-row" style="padding:12px 6px;">
+      <span><strong>${r.date}</strong> — ${r.type}: ${r.reason}</span>
+      <span class="due ${r.excused ? '' : 'hot'}">${r.excused ? 'Excused' : 'Unexcused'}</span>
+    </div>`).join('');
+}
+renderAttendance();
+
+/* INBOX — fake messages */
+const inboxMsgs = [
+  {a:'🧪',s:'Mrs. Smith',subj:'Lab moved to Friday this week — bring goggles',date:'2h ago',unread:true,type:'teacher'},
+  {a:'🏫',s:'School Admin',subj:'No School — Aug 26, staff development day',date:'1d ago',unread:true,type:'admin'},
+  {a:'📐',s:'Mr. Johnson',subj:'Problem Set 7 feedback posted, check Drive',date:'2d ago',unread:false,type:'teacher'},
+  {a:'📖',s:'Ms. Davis',subj:'Essay draft rubric attached, due Friday',date:'3d ago',unread:false,type:'teacher'},
+  {a:'🏛️',s:'Mr. Brown',subj:'DBQ source packet now available',date:'4d ago',unread:false,type:'teacher'},
+  {a:'🏫',s:'School Admin',subj:'Picture retake day scheduled for next month',date:'5d ago',unread:false,type:'admin'},
+];
+let inboxFilter = 'all';
+
+function setInboxFilter(f){
+  inboxFilter = f;
+  document.querySelectorAll('.inbox-filter-chip').forEach(c=>c.classList.toggle('active', c.dataset.filter===f));
+  renderInbox();
+}
+
+function renderInbox(){
+  const filtered = inboxMsgs.filter(m=>{
+    if(inboxFilter==='all') return true;
+    if(inboxFilter==='unread') return m.unread;
+    return m.type===inboxFilter;
+  });
+  document.getElementById('inboxList').innerHTML = filtered.map(m=>`
+    <div class="inbox-item ${m.unread?'unread':''}">
+      <div class="inbox-avatar">${m.a}</div>
+      <div class="inbox-body">
+        <div class="inbox-top"><span class="inbox-sender">${m.s}</span><span class="inbox-date">${m.date}</span></div>
+        <div class="inbox-subject">${m.subj}</div>
+      </div>
+      ${m.unread?'<div class="unread-dot"></div>':''}
+    </div>`).join('') || '<div class="placeholder">No messages match this filter.</div>';
+}
+renderInbox();
+
+/* UPDATE PAGE — sync simulation + changelog */
+let icMinutesAgo = 42;
+let driveMinutesAgo = 12;
+
+function syncSource(which){
+  const targets = which==='all' ? ['ic','drive'] : [which];
+  targets.forEach(t=>{
+    const btn = document.getElementById('sync-btn-'+t);
+    if(btn){ btn.textContent = 'Syncing…'; btn.classList.add('syncing'); btn.disabled = true; }
+  });
+  setTimeout(()=>{
+    targets.forEach(t=>{
+      if(t==='ic') icMinutesAgo = 0;
+      if(t==='drive') driveMinutesAgo = 0;
+      const btn = document.getElementById('sync-btn-'+t);
+      if(btn){ btn.textContent = 'Sync Now'; btn.classList.remove('syncing'); btn.disabled = false; }
+    });
+    document.getElementById('sync-time-ic').textContent = icMinutesAgo===0 ? 'Synced just now' : `Last synced ${icMinutesAgo} minutes ago`;
+    document.getElementById('sync-time-drive').textContent = driveMinutesAgo===0 ? 'Synced just now' : `Last synced ${driveMinutesAgo} minutes ago`;
+  }, 900);
+}
+
+const changelog = [
+  {date:'Today', text:'Added AI-generated grade estimates for assignments that don\'t have one yet — click "Get Est. Grade" on any upcoming assignment.'},
+  {date:'Today', text:'Added a Google Docs–style viewer for Drive files, plus a dedicated Doc shortcut in the sidebar.'},
+  {date:'Yesterday', text:'What-if grading is now per-assignment instead of per-class, with a live projected grade and a Reset All option.'},
+  {date:'Yesterday', text:'Added a toggle to turn AI grade estimates on or off for an entire class.'},
+  {date:'2 days ago', text:'Merged Classes into Dashboard, with a responsive layout for desktop, iPad, and phone.'},
+  {date:'2 days ago', text:'Assignments now open as a full page instead of a popup window.'},
+  {date:'3 days ago', text:'Added Apple-style filters to the Inbox, and a clickable, Apple-style Calendar with attendance reasons.'},
+];
+
+function renderChangelog(){
+  document.getElementById('changelogCard').innerHTML = changelog.map(c=>`
+    <div class="changelog-item">
+      <span class="changelog-date">${c.date}</span>
+      <span class="changelog-text">${c.text}</span>
+    </div>`).join('');
+}
+renderChangelog();
+
+/* NAV */
+function go(view){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('v-'+view).classList.add('active');
+  document.querySelectorAll('.nav-item[data-view]').forEach(n=>n.classList.remove('active'));
+  const navMatch = document.querySelector(`.nav-item[data-view="${view}"]`);
+  if(navMatch) navMatch.classList.add('active');
+  else if(view==='classdetail' || view==='assignment') document.querySelector('.nav-item[data-view="dashboard"]').classList.add('active');
+  document.getElementById('topTitle').textContent = titles[view];
+  if(view==='dashboard'){ renderClassGrid(); renderDash(); }
+}
+document.querySelectorAll('.nav-item[data-view]').forEach(item=>item.addEventListener('click', ()=>go(item.dataset.view)));
+
+function openDefaultDoc(){
+  if(lastOpenedDoc){
+    openDoc(lastOpenedDoc.filename, lastOpenedDoc.className);
+  } else {
+    const firstClass = Object.values(classes)[0];
+    openDoc(firstClass.drive[0].name, firstClass.title);
+  }
+}
+document.getElementById('navDocBtn').addEventListener('click', openDefaultDoc);
+
+/* AI footer collapse */
+let aiOpen = true;
+function toggleAI(){
+  aiOpen = !aiOpen;
+  document.getElementById('aiFooter').classList.toggle('collapsed', !aiOpen);
+  document.getElementById('aiToggleBtn').classList.toggle('on', aiOpen);
+}
+document.getElementById('aiToggleBtn').addEventListener('click', toggleAI);
+
+const canned = {
+  chart:"Your assignment completion has trended up over the last month — 92% on-time in May vs 81% in April.",
+  nextweek:"Next week: US History DBQ Outline (Mon), Physics Worksheet (Tue), Spanish Project (Wed).",
+  missing:"You've missed 2 days this semester — both in March, both excused (doctor's appointments).",
+  trend:"Attendance is steady at 92% overall, no missed days in the last 6 weeks."
+};
+function ask(key){
+  const box = document.getElementById('askResp');
+  const input = document.getElementById('askInput');
+  const a = key ? canned[key] : "This is a static demo — in the real build, this answer would come from Claude or your local Ollama model, reading live data from assignments.json and your connected Google Drive.";
+  box.innerHTML = `<span class="lbl2">AI RESPONSE</span>${a}`;
+  box.classList.add('show');
+  if(!key) input.value = '';
+}
+
+function askPage(key){
+  const log = document.getElementById('aiPageLog');
+  const input = document.getElementById('aiPageInput');
+  const q = key ? {chart:"Show my past assignments chart",nextweek:"What's due next week?",missing:"Show my missing days",trend:"Attendance trend?"}[key] : input.value;
+  const a = key ? canned[key] : "This is a static demo — in the real build this would be a live answer from Claude, grounded in your assignments.json, grades, and Drive files.";
+  if(q){
+    log.innerHTML += `<div class="claude-msg user"><div class="claude-avatar user">You</div><div><div class="claude-bubble">${q}</div></div></div>`;
+  }
+  log.innerHTML += `<div class="claude-msg ai"><div class="claude-avatar ai">✦</div><div><div class="claude-bubble">${a}</div></div></div>`;
+  log.scrollTop = log.scrollHeight;
+  if(!key) input.value = '';
+}
+
+function seedAiPageHistory(){
+  const log = document.getElementById('aiPageLog');
+  const history = Object.keys(classes).map(id=>buildClassAiHistory(id)).join('');
+  if(history){
+    log.innerHTML += history;
+  }
+}
+seedAiPageHistory();
+</script>
+
+</body>
+</html>
