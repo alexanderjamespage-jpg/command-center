@@ -507,6 +507,7 @@
     <div class="nav-item" data-view="inbox"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6 8.5 7 8.5-7"/></svg></span>Inbox</div>
     <div class="nav-item" data-view="history"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></span>History</div>
     <div class="nav-item" data-view="ai"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v3M12 17v3M4 12h3M17 12h3M6.5 6.5l2 2M15.5 15.5l2 2M17.5 6.5l-2 2M8.5 15.5l-2 2"/><circle cx="12" cy="12" r="2.3"/></svg></span>AI</div>
+    <div class="nav-item" data-view="localai"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h.01M15 9h.01M9 15h6"/></svg></span>Local AI</div>
     <div class="nav-item" data-view="update"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 13.66-5.66L20 8.5"/><path d="M20 4v4.5h-4.5"/><path d="M20 12a8 8 0 0 1-13.66 5.66L4 15.5"/><path d="M4 20v-4.5h4.5"/></svg></span>Update</div>
     <div class="nav-item" data-view="help"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M9.3 9.3a2.7 2.7 0 1 1 3.9 2.4c-.8.5-1.2 1-1.2 1.9"/><circle cx="12" cy="16.4" r=".4" fill="currentColor" stroke="none"/></svg></span>Help</div>
     <div class="nav-spacer"></div>
@@ -705,7 +706,31 @@
         </div>
       </div>
 
-      <div class="view" id="v-history"><div class="placeholder">History — past attendance and activity log.</div></div>
+          <div class="view" id="v-localai">
+            <div class="section-title">Local AI (Ollama)</div>
+            <div class="claude-window ai-page-window">
+              <div class="claude-titlebar">
+                <div class="claude-dot r"></div><div class="claude-dot y"></div><div class="claude-dot g"></div>
+                <div class="claude-titlebar-label">🖥️ Local — llama3.1:8b</div>
+              </div>
+              <div class="claude-body ai-page-log" id="localAiLog">
+                <div class="claude-msg ai">
+                  <div class="claude-avatar ai">🖥️</div>
+                  <div><div class="claude-bubble">Running on your Mac mini. This only works when you're on the same network as it.</div></div>
+                </div>
+              </div>
+              <div class="ai-page-composer">
+                <div class="ai-page-composer-inner">
+                  <div class="ai-input-row">
+                    <input class="ai-input" id="localAiInput" placeholder="Ask the local model...">
+                    <button class="ai-send" onclick="askLocalAI()">➤</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="view" id="v-history"><div class="placeholder">History — past attendance and activity log.</div></div>
       <!-- UPDATE -->
       <div class="view" id="v-update">
         <div class="section-title">Update</div>
@@ -1438,6 +1463,35 @@ function go(view){
   document.getElementById('topTitle').textContent = titles[view];
   if(view==='dashboard'){ renderClassGrid(); renderDash(); }
 }
+const OLLAMA_URL = 'http://192.168.1.234:11434'; // <-- replace with your Mac mini's IP from Step 16
+
+async function askLocalAI() {
+  const input = document.getElementById('localAiInput');
+  const log = document.getElementById('localAiLog');
+  const q = input.value.trim();
+  if (!q) return;
+  input.value = '';
+
+  log.innerHTML += `<div class="claude-msg user"><div class="claude-avatar user">You</div><div><div class="claude-bubble">${q}</div></div></div>`;
+  log.innerHTML += `<div class="claude-msg ai" id="localai-loading"><div class="claude-avatar ai">🖥️</div><div><div class="claude-bubble">Thinking...</div></div></div>`;
+  log.scrollTop = log.scrollHeight;
+
+  try {
+    const res = await fetch(`${OLLAMA_URL}/api/generate`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ model: 'llama3.1:8b', prompt: q, stream: false })
+    });
+    const data = await res.json();
+    document.getElementById('localai-loading').outerHTML =
+      `<div class="claude-msg ai"><div class="claude-avatar ai">🖥️</div><div><div class="claude-bubble">${data.response}</div></div></div>`;
+  } catch (e) {
+    document.getElementById('localai-loading').outerHTML =
+      `<div class="claude-msg ai"><div class="claude-avatar ai">🖥️</div><div><div class="claude-bubble">Can't reach your Mac mini — make sure you're on the same network and Ollama is running.</div></div></div>`;
+  }
+  log.scrollTop = log.scrollHeight;
+}
+
 document.querySelectorAll('.nav-item[data-view]').forEach(item=>item.addEventListener('click', ()=>go(item.dataset.view)));
 
 function openDefaultDoc(){
