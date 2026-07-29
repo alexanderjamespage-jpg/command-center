@@ -376,6 +376,15 @@
   .cal-legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;}
   .cal-legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--dim);}
   .cal-legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+  .cal-layers-panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:12px 16px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:18px;align-items:center;}
+  .cal-layer-row{display:flex;align-items:center;gap:8px;font-size:12.5px;}
+  .cal-layer-row input[type="checkbox"]{width:15px;height:15px;accent-color:var(--blue);cursor:pointer;}
+  .cal-layer-row label{cursor:pointer;display:flex;align-items:center;gap:6px;}
+  .cal-layer-connect{background:var(--panel2);border:1px solid var(--border);color:var(--dim);border-radius:14px;padding:3px 10px;font-size:10.5px;cursor:pointer;}
+  .cal-layer-connect:hover{color:var(--text);border-color:var(--blue);}
+  .cal-add-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .cal-add-btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;}
+  .cal-add-btn:hover{border-color:var(--blue);}
   .cal-month-title{font-size:20px;font-weight:700;letter-spacing:-0.3px;}
   .cal-nav{display:flex;gap:8px;}
   .cal-nav-btn{
@@ -566,6 +575,7 @@
         <div class="card" style="margin-bottom:14px;">
           <h4 style="font-size:11px;letter-spacing:0.5px;color:var(--dim);text-transform:uppercase;margin-bottom:8px;">Requirements</h4>
           <div class="modal-req" id="m-req"></div>
+          <div class="cal-add-actions" id="m-cal-actions"></div>
         </div>
 
         <div class="card" style="margin-bottom:14px;">
@@ -628,6 +638,19 @@
           <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--amber);"></span>Due soon</span>
           <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--purple);"></span>Absence</span>
           <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--blue);"></span>Tardy</span>
+        </div>
+        <div class="cal-layers-panel">
+          <div class="cal-layer-row">
+            <label><input type="checkbox" id="layer-school" checked onchange="toggleLayer('school')"> 🏫 School</label>
+          </div>
+          <div class="cal-layer-row">
+            <label><input type="checkbox" id="layer-google" onchange="toggleLayer('google')"> 📅 Google Calendar</label>
+            <button class="cal-layer-connect" id="google-connect-btn" onclick="connectGoogleCalendar()">Connect</button>
+          </div>
+          <div class="cal-layer-row">
+            <label><input type="checkbox" id="layer-apple" onchange="toggleLayer('apple')"> 🍎 Apple Calendar</label>
+            <button class="cal-layer-connect" id="apple-connect-btn" onclick="connectAppleCalendar()">Connect</button>
+          </div>
         </div>
         <div class="cal-wrap">
           <div class="cal-grid" id="calGrid"></div>
@@ -1289,6 +1312,15 @@ function openAssignment(classId, list, idx){
   document.getElementById('m-meta').textContent = `${c.title} · ${a.due || a.score} · ${a.points ? a.points+' pts' : ''}`;
   document.getElementById('m-req').textContent = a.req || 'No additional requirements listed for this assignment.';
 
+  const calActions = document.getElementById('m-cal-actions');
+  if(list==='upcoming'){
+    calActions.innerHTML = `
+      <button class="cal-add-btn" onclick="addToGoogleCalendar('${a.name.replace(/'/g,"\\'")}', '${c.title}')">📅 Add to Google Calendar</button>
+      <button class="cal-add-btn" onclick="downloadICS('${a.name.replace(/'/g,"\\'")}', '${c.title}')">🍎 Download for Apple Calendar</button>`;
+  } else {
+    calActions.innerHTML = '';
+  }
+
   const turninBox = document.getElementById('m-turnin');
   if(a.turnIn && a.turnIn.length){
     turninBox.innerHTML = a.turnIn.map(f=>`
@@ -1380,8 +1412,11 @@ function openDoc(filename, className){
   document.getElementById('topTitle').textContent = filename;
 }
 
-/* CALENDAR — fake July 2026 grid, Apple-style, clickable days */
-const calEvents = {
+/* CALENDAR — fake July 2026 grid, Apple-style, clickable days, with layered sources */
+
+/* SCHOOL layer — generated from your actual assignments/attendance data (see renderDash/renderAttendance).
+   These day numbers are still placeholders until real due dates are filled in (search the file for ⚠️ EDIT). */
+const schoolEvents = {
   2:[{t:'Calc Problem Set 7',c:''}], 3:[{t:'Chem Lab Report',c:''}],
   5:[{t:'Essay Draft',c:'amber'}], 9:[{t:'DBQ Outline',c:'amber'}],
   12:[{t:'Unit 6 Review',c:'amber'}],
@@ -1393,6 +1428,59 @@ const calEvents = {
   24:[{t:'Derivatives Quiz',c:''},{t:'Chem Quiz Review',c:''}]
 };
 
+/* GOOGLE CALENDAR layer — empty until connected.
+   TO WIRE UP FOR REAL: create an OAuth Client ID at console.cloud.google.com (enable the
+   Google Calendar API), then in connectGoogleCalendar() below, sign the user in and call
+   https://www.googleapis.com/calendar/v3/calendars/primary/events to fill this object,
+   keyed by day-of-month with the same {t, c} shape as schoolEvents. */
+let googleEvents = {};
+
+/* APPLE CALENDAR layer — empty until connected.
+   TO WIRE UP FOR REAL: share the target calendar as a Public Calendar from the Calendar app,
+   copy its webcal:// link, swap it to https://, then in connectAppleCalendar() below fetch
+   that .ics feed (a small backend or serverless function is needed since browsers block
+   cross-origin .ics fetches directly), parse it, and fill this object the same way. */
+let appleEvents = {};
+
+const calendarLayers = { school:true, google:false, apple:false };
+try {
+  const savedLayers = JSON.parse(localStorage.getItem('calendarLayers'));
+  if(savedLayers) Object.assign(calendarLayers, savedLayers);
+} catch(e){}
+
+function saveCalendarLayers(){
+  try { localStorage.setItem('calendarLayers', JSON.stringify(calendarLayers)); } catch(e){}
+}
+
+function toggleLayer(name){
+  calendarLayers[name] = document.getElementById('layer-'+name).checked;
+  saveCalendarLayers();
+  renderCalendar();
+}
+
+function initLayerCheckboxes(){
+  ['school','google','apple'].forEach(name=>{
+    const el = document.getElementById('layer-'+name);
+    if(el) el.checked = calendarLayers[name];
+  });
+}
+
+function connectGoogleCalendar(){
+  alert('To connect your real Google Calendar:\n\n1. Go to console.cloud.google.com and create a project\n2. Enable the "Google Calendar API"\n3. Create an OAuth 2.0 Client ID (Web application type)\n4. Add this site\'s URL as an authorized JavaScript origin\n5. Send me the Client ID and I\'ll wire up sign-in + live event fetching here\n\nUntil then, this toggle has no live data to show.');
+}
+
+function connectAppleCalendar(){
+  alert('To connect Apple Calendar:\n\n1. On iPhone or Mac, open the Calendar app\n2. Find the calendar you want to share, and turn on "Public Calendar"\n3. Copy the link it gives you (starts with webcal://) and change webcal:// to https://\n4. Send me that link and I\'ll wire up code here to fetch and display it\n\nUntil then, this toggle has no live data to show.');
+}
+
+function getMergedEvents(d){
+  let evs = [];
+  if(calendarLayers.school) evs = evs.concat(schoolEvents[d] || []);
+  if(calendarLayers.google) evs = evs.concat(googleEvents[d] || []);
+  if(calendarLayers.apple) evs = evs.concat(appleEvents[d] || []);
+  return evs;
+}
+
 function renderCalendar(){
   const grid = document.getElementById('calGrid');
   const dows = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -1402,7 +1490,7 @@ function renderCalendar(){
   for(let i=0;i<startOffset;i++) html += `<div class="cal-day empty"></div>`;
   for(let d=1; d<=daysInMonth; d++){
     const isToday = d===24;
-    const evs = calEvents[d] || [];
+    const evs = getMergedEvents(d);
     const shown = evs.slice(0,2);
     const extra = evs.length - shown.length;
     html += `<div class="cal-day ${isToday?'today':''}" onclick="openDay(${d})">
@@ -1414,9 +1502,10 @@ function renderCalendar(){
   grid.innerHTML = html;
 }
 renderCalendar();
+initLayerCheckboxes();
 
 function openDay(d){
-  const evs = calEvents[d] || [];
+  const evs = getMergedEvents(d);
   document.getElementById('d-title').textContent = `July ${d}${d===24 ? ' — Today' : ''}`;
   document.getElementById('d-events').innerHTML = evs.length ? evs.map(e=>`
     <div class="a-detail-item" style="cursor:default;">
@@ -1426,6 +1515,33 @@ function openDay(d){
 }
 function closeDayModal(){
   document.getElementById('dayModal').classList.remove('show');
+}
+
+/* ADD TO CALENDAR — pushes a single assignment's due date out to Google or Apple Calendar.
+   Since most assignments still have placeholder due dates, this asks you to confirm/enter
+   the real date at click time rather than guessing from the text due date. */
+function formatICSDate(dateStr){
+  return dateStr.replace(/-/g,'');
+}
+
+function addToGoogleCalendar(title, className){
+  const dateInput = prompt(`Due date for "${title}" (${className})? Enter as YYYY-MM-DD:`, '');
+  if(!dateInput) return;
+  const d = formatICSDate(dateInput);
+  const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${d}/${d}&details=${encodeURIComponent(className+' assignment')}`;
+  window.open(url, '_blank');
+}
+
+function downloadICS(title, className){
+  const dateInput = prompt(`Due date for "${title}" (${className})? Enter as YYYY-MM-DD:`, '');
+  if(!dateInput) return;
+  const d = formatICSDate(dateInput);
+  const ics = `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:${title}\nDTSTART;VALUE=DATE:${d}\nDTEND;VALUE=DATE:${d}\nDESCRIPTION:${className} assignment\nEND:VEVENT\nEND:VCALENDAR`;
+  const blob = new Blob([ics], {type:'text/calendar'});
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = title.replace(/[^a-z0-9]/gi,'_') + '.ics';
+  link.click();
 }
 
 /* ATTENDANCE — list with reasons */
@@ -1532,7 +1648,7 @@ function go(view){
   document.getElementById('topTitle').textContent = titles[view];
   if(view==='dashboard'){ renderClassGrid(); renderDash(); }
 }
-const OLLAMA_URL = 'http://192.168.1.234:11434'; // <-- replace with your Mac mini's IP from Step 16
+const OLLAMA_URL = 'https://suspend-shaking-spousal.ngrok-free.dev';
 
 async function askLocalAI() {
   const input = document.getElementById('localAiInput');
@@ -1548,7 +1664,10 @@ async function askLocalAI() {
   try {
     const res = await fetch(`${OLLAMA_URL}/api/generate`, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true'
+      },
       body: JSON.stringify({ model: 'llama3.1:8b', prompt: q, stream: false })
     });
     const data = await res.json();
