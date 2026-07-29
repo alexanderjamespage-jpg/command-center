@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Command Center — Demo v3</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root{
     --bg:#0b0d13; --panel:rgba(255,255,255,0.045); --panel2:rgba(255,255,255,0.08); --border:rgba(255,255,255,0.11);
@@ -1457,6 +1458,67 @@ const schoolEvents = {
    keyed by day-of-month with the same {t, c} shape as schoolEvents. */
 let googleEvents = {};
 
+/* ---- REAL GOOGLE CALENDAR INTEGRATION ---- */
+// Only the Client ID goes here — it's meant to be public in browser apps.
+// Never put a Client Secret in front-end code; it isn't needed for this flow.
+const GOOGLE_CLIENT_ID = '102037772722-fjnjlrr7vb3pg526mggqmqupr1cch0kc.apps.googleusercontent.com';
+const GOOGLE_CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.readonly';
+let googleTokenClient = null;
+let googleAccessToken = null;
+
+function initGoogleTokenClient(){
+  if(googleTokenClient || typeof google === 'undefined' || !google.accounts) return;
+  googleTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: GOOGLE_CALENDAR_SCOPE,
+    callback: (tokenResponse) => {
+      if(tokenResponse && tokenResponse.access_token){
+        googleAccessToken = tokenResponse.access_token;
+        fetchGoogleCalendarEvents();
+      }
+    },
+  });
+}
+
+async function fetchGoogleCalendarEvents(){
+  const btn = document.getElementById('google-connect-btn');
+  if(btn){ btn.textContent = 'Loading…'; }
+
+  // The demo calendar only renders July 2026, so we pull whatever range covers that
+  // displayed month. In a real build this would follow whichever month is on screen.
+  const timeMin = new Date('2026-07-01T00:00:00Z').toISOString();
+  const timeMax = new Date('2026-08-01T00:00:00Z').toISOString();
+
+  try{
+    const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`, {
+      headers: { Authorization: `Bearer ${googleAccessToken}` }
+    });
+    if(!res.ok) throw new Error('Calendar API error: ' + res.status);
+    const data = await res.json();
+
+    googleEvents = {};
+    (data.items || []).forEach(ev=>{
+      const startStr = ev.start && (ev.start.dateTime || ev.start.date);
+      if(!startStr) return;
+      const d = new Date(startStr);
+      const day = d.getUTCDate();
+      googleEvents[day] = googleEvents[day] || [];
+      googleEvents[day].push({ t: ev.summary || '(untitled event)', c: 'blue2' });
+    });
+
+    calendarLayers.google = true;
+    saveCalendarLayers();
+    const cb = document.getElementById('layer-google');
+    if(cb) cb.checked = true;
+    if(btn){ btn.textContent = 'Connected ✓'; btn.disabled = true; }
+    renderCalendar();
+  } catch(e){
+    console.error(e);
+    if(btn){ btn.textContent = 'Retry'; }
+    alert("Couldn't load your Google Calendar events. Check that the Calendar API is enabled and this site's URL is added as an Authorized JavaScript origin, then try again.");
+  }
+}
+
 /* APPLE CALENDAR layer — empty until connected.
    TO WIRE UP FOR REAL: share the target calendar as a Public Calendar from the Calendar app,
    copy its webcal:// link, swap it to https://, then in connectAppleCalendar() below fetch
@@ -1488,7 +1550,16 @@ function initLayerCheckboxes(){
 }
 
 function connectGoogleCalendar(){
-  alert('To connect your real Google Calendar:\n\n1. Go to console.cloud.google.com and create a project\n2. Enable the "Google Calendar API"\n3. Create an OAuth 2.0 Client ID (Web application type)\n4. Add this site\'s URL as an authorized JavaScript origin\n5. Send me the Client ID and I\'ll wire up sign-in + live event fetching here\n\nUntil then, this toggle has no live data to show.');
+  if(typeof google === 'undefined' || !google.accounts){
+    alert("Google's sign-in script hasn't loaded yet — check your internet connection and try again in a moment.");
+    return;
+  }
+  initGoogleTokenClient();
+  if(googleAccessToken){
+    fetchGoogleCalendarEvents();
+  } else {
+    googleTokenClient.requestAccessToken();
+  }
 }
 
 function connectAppleCalendar(){
