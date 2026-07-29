@@ -1571,8 +1571,8 @@ async function fetchIcsFeed(source){
 
   try{
     const res = await fetch(`/api/calendar-feed?source=${source}`);
-    if(!res.ok) throw new Error('Feed fetch failed: ' + res.status);
     const data = await res.json();
+    if(!res.ok) throw new Error(data.error || ('Feed fetch failed: ' + res.status));
 
     if(source === 'apple') appleEvents = data;
     else if(source === 'parentsquare') parentSquareEvents = data;
@@ -1586,7 +1586,7 @@ async function fetchIcsFeed(source){
   } catch(e){
     console.error(e);
     if(btn){ btn.textContent = 'Retry'; }
-    alert("Couldn't load that calendar feed — check your Vercel function logs for /api/calendar-feed.");
+    alert("Couldn't load that calendar feed: " + e.message);
   }
 }
 
