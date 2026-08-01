@@ -477,6 +477,16 @@ body{
 .acct-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .acct-chip{display:flex;align-items:center;gap:7px;background:var(--panel2);border:1px solid var(--border);
   border-radius:20px;padding:5px 8px 5px 11px;font-size:11.5px;}
+.acct-chip.toggleable{cursor:pointer;}
+.acct-chip.toggleable:hover{border-color:var(--blue);}
+.acct-chip.off{opacity:0.45;}
+.acct-chip.off .acct-dot{background:transparent !important;box-shadow:inset 0 0 0 2px var(--dim);}
+.acct-switch{width:26px;height:15px;border-radius:20px;background:var(--border);position:relative;flex-shrink:0;transition:background .15s;}
+.acct-switch::after{content:'';position:absolute;top:2px;left:2px;width:11px;height:11px;border-radius:50%;
+  background:var(--dim);transition:transform .15s,background .15s;}
+.acct-chip.on .acct-switch{background:rgba(91,132,196,0.45);}
+.acct-chip.on .acct-switch::after{transform:translateX(11px);background:#fff;}
+.acct-hint{font-size:11px;color:var(--dim);}
 .acct-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 .acct-x{background:none;border:none;color:var(--dim);cursor:pointer;font-size:12px;padding:0 2px;}
 .acct-x:hover{color:var(--red);}
@@ -756,13 +766,34 @@ body{
 
       <!-- JARVIS -->
       <div class="view" id="v-localai">
-        <div class="section-title">Jarvis (Local AI)</div>
+        <div class="inbox-head">
+          <div class="section-title" style="margin-bottom:0;">Jarvis (Local AI)</div>
+          <div class="inbox-head-right acct-bar">
+            <span class="inbox-status" id="jarvisStatus">Not checked yet</span>
+            <button class="cal-add-btn" onclick="testJarvis()">Test connection</button>
+            <button class="cal-add-btn" onclick="toggleJarvisSettings()">⚙ Settings</button>
+          </div>
+        </div>
+        <div class="card" id="jarvisSettings" style="display:none;margin-bottom:14px;">
+          <h4 style="font-size:11px;letter-spacing:0.5px;color:var(--dim);text-transform:uppercase;margin-bottom:10px;">Connection</h4>
+          <div style="font-size:11.5px;color:var(--dim);margin-bottom:6px;">Tunnel URL (your ngrok address, no trailing slash)</div>
+          <input class="ai-input" id="jarvisUrlInput" style="width:100%;margin-bottom:12px;" placeholder="https://something.ngrok-free.dev">
+          <div style="font-size:11.5px;color:var(--dim);margin-bottom:6px;">Model — run <code>ollama list</code> on the Mac mini to see exact names</div>
+          <input class="ai-input" id="jarvisModelInput" style="width:100%;margin-bottom:12px;" placeholder="llama3.1:8b" list="jarvisModelList">
+          <datalist id="jarvisModelList"></datalist>
+          <label class="cal-layer-row" style="margin-bottom:12px;cursor:pointer;">
+            <input type="checkbox" id="jarvisSkipHeader"> Send ngrok skip-warning header
+          </label>
+          <div style="font-size:11px;color:var(--dim);margin:-6px 0 12px;line-height:1.5;">Leave this off. Only turn it on if the connection test says it got an ngrok warning page instead of JSON.</div>
+          <button class="btn-primary" onclick="saveJarvisSettings()">Save</button>
+          <div style="font-size:11.5px;color:var(--dim);margin-top:12px;line-height:1.6;">Saved on this device only. Change it here whenever your ngrok URL changes — no redeploy needed.</div>
+        </div>
         <div class="ai-shell">
           <section class="ai-shell-main">
             <div class="ai-main-head">
-              <span class="dot" style="background:var(--green);"></span>
+              <span class="dot" id="jarvisDot" style="background:var(--dim);"></span>
               <span class="t">Jarvis</span>
-              <span class="s">llama3.1:8b · Mac mini</span>
+              <span class="s" id="jarvisModelLabel">not connected</span>
             </div>
             <div class="ai-log" id="localAiLog">
               <div class="ai-msg">
@@ -1917,7 +1948,7 @@ function setInboxFilter(f){
 }
 function renderInbox(){
   const filtered = inboxMsgs.filter(m=>{
-    if(acctFilter!=='all' && m.acctId !== acctFilter) return false;
+    if(m.acctId && !accountOn(m.acctId)) return false;
     if(inboxFilter==='all') return true;
     if(inboxFilter==='unread') return m.unread;
     return m.type===inboxFilter;
@@ -1959,8 +1990,23 @@ const ADMIN_SENDER_HINTS = ['noreply','no-reply','donotreply','infinitecampus','
 
 let gmailTokenClient = null;
 let gmailAccounts = [];   // [{id, email, token, color, error}]
-let acctFilter = 'all';   // 'all' or an account id
 let gmailLoading = false;
+
+/* An account that's switched off stays connected but is hidden from the
+   inbox, so you can read one mailbox at a time without signing out. */
+function accountOn(id){
+  const a = gmailAccounts.find(x=>x.id===id);
+  return !a || a.enabled !== false;
+}
+function toggleGmailAccount(id){
+  const a = gmailAccounts.find(x=>x.id===id);
+  if(!a) return;
+  a.enabled = a.enabled === false;
+  renderGmailAccounts();
+  renderAcctFilter();
+  renderInbox();
+  updateUnreadBadge();
+}
 
 /* ---- connecting accounts ---- */
 function connectGmail(){
@@ -2005,6 +2051,7 @@ async function registerGmailAccount(token){
         email: profile.emailAddress,
         token,
         color: ACCT_COLORS[gmailAccounts.length % ACCT_COLORS.length],
+        enabled: true,
         error: null
       });
     }
@@ -2018,7 +2065,6 @@ async function registerGmailAccount(token){
 function disconnectGmail(id){
   gmailAccounts = gmailAccounts.filter(a=>a.id!==id);
   openEmails = openEmails.filter(e=>e.acctId!==id);
-  if(acctFilter===id) acctFilter = 'all';
   if(gmailAccounts.length) fetchAllGmail();
   else { inboxMsgs = SAMPLE_INBOX.slice(); renderGmailAccounts(); renderAcctFilter(); renderInbox(); updateUnreadBadge(); }
 }
@@ -2123,11 +2169,14 @@ function renderGmailAccounts(){
   const el = document.getElementById('gmailAccounts');
   if(!el) return;
   const chips = gmailAccounts.map(a=>`
-    <span class="acct-chip">
+    <span class="acct-chip toggleable ${a.enabled===false?'off':'on'}"
+          title="${a.enabled===false?'Show this account':'Hide this account'}"
+          onclick="toggleGmailAccount('${a.id}')">
+      <span class="acct-switch"></span>
       <span class="acct-dot" style="background:${a.color};"></span>
       <span>${escapeHtml(a.email)}</span>
       ${a.error ? `<span class="acct-err">(${escapeHtml(a.error)})</span>` : ''}
-      <button class="acct-x" title="Disconnect" onclick="disconnectGmail('${a.id}')">✕</button>
+      <button class="acct-x" title="Disconnect" onclick="event.stopPropagation(); disconnectGmail('${a.id}')">✕</button>
     </span>`).join('');
   const addLabel = gmailAccounts.length ? '＋ Add account' : 'Connect Gmail';
   el.innerHTML = chips
@@ -2136,16 +2185,12 @@ function renderGmailAccounts(){
     + (gmailAccounts.length ? `<button class="cal-add-btn" onclick="fetchAllGmail()">↻ Refresh</button>` : '')
     + (gmailAccounts.length ? '' : '<span class="inbox-status">Showing sample mail</span>');
 }
-function setAcctFilter(id){ acctFilter = id; renderAcctFilter(); renderInbox(); }
 function renderAcctFilter(){
   const el = document.getElementById('acctFilterBar');
   if(!el) return;
-  if(gmailAccounts.length < 2){ el.innerHTML = ''; return; }
-  el.innerHTML = `<button class="inbox-filter-chip ${acctFilter==='all'?'active':''}" onclick="setAcctFilter('all')">Both accounts</button>`
-    + gmailAccounts.map(a=>`
-      <button class="inbox-filter-chip ${acctFilter===a.id?'active':''}" onclick="setAcctFilter('${a.id}')">
-        <span class="acct-dot" style="background:${a.color};display:inline-block;margin-right:6px;"></span>${escapeHtml(a.email.split('@')[0])}
-      </button>`).join('');
+  const off = gmailAccounts.filter(a=>a.enabled===false);
+  if(!off.length){ el.innerHTML = ''; return; }
+  el.innerHTML = `<span class="acct-hint">Hidden: ${off.map(a=>escapeHtml(a.email)).join(', ')} — tap the switch above to bring ${off.length===1?'it':'them'} back.</span>`;
 }
 
 /* ---- reading a message: several stay open as tabs ---- */
@@ -2283,7 +2328,7 @@ function openGmailMessage(acctId, id){
 }
 
 function updateUnreadBadge(){
-  const n = inboxMsgs.filter(m=>m.unread).length;
+  const n = inboxMsgs.filter(m=>m.unread && (!m.acctId || accountOn(m.acctId))).length;
   const badge = document.querySelector('.bell .badge');
   if(badge){ badge.textContent = n; badge.style.display = n ? '' : 'none'; }
 }
@@ -2371,31 +2416,148 @@ function askPage(key){
   renderAiPage();
 }
 
-/* ===================== JARVIS (local Ollama) ===================== */
-const OLLAMA_URL = 'https://suspend-shaking-spousal.ngrok-free.dev';
+/* =====================================================================
+   JARVIS — talks to Ollama on your Mac mini through an ngrok tunnel.
+   The URL and model are kept in localStorage so you can change them from
+   the Settings panel without editing this file or redeploying.
+   ===================================================================== */
+const OLLAMA_URL_DEFAULT = 'https://suspend-shaking-spousal.ngrok-free.dev';
+const OLLAMA_MODEL_DEFAULT = 'llama3.1:8b';
+
+let ollamaUrl = OLLAMA_URL_DEFAULT;
+let ollamaModel = OLLAMA_MODEL_DEFAULT;
+try{
+  ollamaUrl = localStorage.getItem('ollamaUrl') || OLLAMA_URL_DEFAULT;
+  ollamaModel = localStorage.getItem('ollamaModel') || OLLAMA_MODEL_DEFAULT;
+}catch(e){}
+
+/* The ngrok-skip-browser-warning header is OFF by default. It's a non-standard
+   header, so the browser has to ask Ollama for permission to send it during the
+   CORS preflight — and Ollama's allowed-header list doesn't include it, which
+   kills the request. Only switch it on if you actually see ngrok's interstitial
+   warning page instead of JSON. */
+let ollamaSkipHeader = false;
+try{ ollamaSkipHeader = localStorage.getItem('ollamaSkipHeader') === '1'; }catch(e){}
+
+function ollamaHeaders(){
+  const h = { 'Content-Type':'application/json' };
+  if(ollamaSkipHeader) h['ngrok-skip-browser-warning'] = 'true';
+  return h;
+}
+
+function toggleJarvisSettings(){
+  const el = document.getElementById('jarvisSettings');
+  const showing = el.style.display !== 'none';
+  el.style.display = showing ? 'none' : '';
+  if(!showing){
+    document.getElementById('jarvisUrlInput').value = ollamaUrl;
+    document.getElementById('jarvisModelInput').value = ollamaModel;
+    document.getElementById('jarvisSkipHeader').checked = ollamaSkipHeader;
+  }
+}
+function saveJarvisSettings(){
+  const url = document.getElementById('jarvisUrlInput').value.trim().replace(/\/+$/,'');
+  const model = document.getElementById('jarvisModelInput').value.trim();
+  if(url) ollamaUrl = url;
+  if(model) ollamaModel = model;
+  ollamaSkipHeader = document.getElementById('jarvisSkipHeader').checked;
+  try{
+    localStorage.setItem('ollamaUrl', ollamaUrl);
+    localStorage.setItem('ollamaModel', ollamaModel);
+    localStorage.setItem('ollamaSkipHeader', ollamaSkipHeader ? '1' : '0');
+  }catch(e){}
+  document.getElementById('jarvisSettings').style.display = 'none';
+  testJarvis();
+}
+function setJarvisStatus(text, state){
+  const s = document.getElementById('jarvisStatus');
+  const dot = document.getElementById('jarvisDot');
+  if(s){ s.textContent = text; s.classList.toggle('on', state==='ok'); }
+  if(dot) dot.style.background = state==='ok' ? 'var(--green)' : state==='bad' ? 'var(--red)' : 'var(--dim)';
+}
+
+/* Turns whatever went wrong into something you can actually act on. */
+function explainOllamaFailure(err, res, bodyText){
+  if(res){
+    if(res.status === 403)
+      return "Ollama answered but refused the request (403). It's blocking outside connections — set OLLAMA_HOST and OLLAMA_ORIGINS on the Mac mini, then restart Ollama.";
+    if(res.status === 404)
+      return `Reached Ollama, but it doesn't have a model called "${ollamaModel}" (404). Run 'ollama list' on the Mac mini and put an exact name in Settings.`;
+    if(res.status === 502 || res.status === 504)
+      return "The ngrok tunnel is up but nothing is answering behind it (502). Ollama probably isn't running, or ngrok is pointed at the wrong port — it should be 11434.";
+    if(bodyText && /ngrok/i.test(bodyText) && /<html/i.test(bodyText))
+      return "That URL returned an ngrok error page, not Ollama. The tunnel is offline or the address has changed — start ngrok again and paste the new URL into Settings.";
+    return `Unexpected response ${res.status} from ${ollamaUrl}.`;
+  }
+  return "The browser blocked the request before it reached Ollama. If your ngrok window shows an OPTIONS line but no POST, it's CORS: OLLAMA_ORIGINS on the Mac mini doesn't match this site, or Ollama wasn't restarted after setting it. Open DevTools → Console for the exact wording.";
+}
+
+async function testJarvis(){
+  setJarvisStatus('Checking…', 'idle');
+  try{
+    const res = await fetch(`${ollamaUrl}/api/tags`, { headers: ollamaHeaders() });
+    const text = await res.text();
+    if(!res.ok){
+      setJarvisStatus('Not connected', 'bad');
+      alert(explainOllamaFailure(null, res, text));
+      return;
+    }
+    let data;
+    try{ data = JSON.parse(text); }
+    catch(e){
+      setJarvisStatus('Not connected', 'bad');
+      alert(explainOllamaFailure(null, res, text));
+      return;
+    }
+    const names = (data.models || []).map(m=>m.name);
+    document.getElementById('jarvisModelList').innerHTML = names.map(n=>`<option value="${n}">`).join('');
+    const has = names.includes(ollamaModel);
+    setJarvisStatus(`Connected · ${names.length} model${names.length===1?'':'s'}`, 'ok');
+    document.getElementById('jarvisModelLabel').textContent = ollamaModel + (has ? ' · Mac mini' : ' — not installed');
+    if(!has && names.length){
+      alert(`Connected, but "${ollamaModel}" isn't on the Mac mini.\n\nAvailable: ${names.join(', ')}\n\nPick one of those in Settings, or run: ollama pull ${ollamaModel}`);
+    }
+  }catch(err){
+    console.error('Jarvis test failed', err);
+    setJarvisStatus('Not connected', 'bad');
+    alert(explainOllamaFailure(err));
+  }
+}
+
 async function askLocalAI(){
   const input = document.getElementById('localAiInput');
   const log = document.getElementById('localAiLog');
   const q = input.value.trim();
   if(!q) return;
   input.value = '';
-  log.innerHTML += `<div class="ai-msg user"><div class="ai-avatar you">You</div><div><div class="ai-bubble">${q}</div></div></div>`;
+  log.innerHTML += `<div class="ai-msg user"><div class="ai-avatar you">You</div><div><div class="ai-bubble">${escapeHtml(q)}</div></div></div>`;
   log.innerHTML += `<div class="ai-msg" id="localai-loading"><div class="ai-avatar bot">J</div><div><div class="ai-bubble">Thinking…</div></div></div>`;
   log.scrollTop = log.scrollHeight;
+
+  const reply = (text)=>{
+    document.getElementById('localai-loading').outerHTML =
+      `<div class="ai-msg"><div class="ai-avatar bot">J</div><div><div class="ai-bubble">${escapeHtml(text)}</div></div></div>`;
+    log.scrollTop = log.scrollHeight;
+  };
+
   try{
-    const res = await fetch(`${OLLAMA_URL}/api/generate`, {
+    const res = await fetch(`${ollamaUrl}/api/generate`, {
       method:'POST',
-      headers:{ 'Content-Type':'application/json', 'ngrok-skip-browser-warning':'true' },
-      body: JSON.stringify({ model:'llama3.1:8b', prompt:q, stream:false })
+      headers: ollamaHeaders(),
+      body: JSON.stringify({ model: ollamaModel, prompt: q, stream:false })
     });
-    const data = await res.json();
-    document.getElementById('localai-loading').outerHTML =
-      `<div class="ai-msg"><div class="ai-avatar bot">J</div><div><div class="ai-bubble">${data.response}</div></div></div>`;
-  }catch(e){
-    document.getElementById('localai-loading').outerHTML =
-      `<div class="ai-msg"><div class="ai-avatar bot">J</div><div><div class="ai-bubble">I can't reach your Mac mini right now — make sure you're on the same network and Ollama is running.</div></div></div>`;
+    const text = await res.text();
+    if(!res.ok){ setJarvisStatus('Not connected','bad'); reply(explainOllamaFailure(null, res, text)); return; }
+    let data;
+    try{ data = JSON.parse(text); }
+    catch(e){ setJarvisStatus('Not connected','bad'); reply(explainOllamaFailure(null, res, text)); return; }
+    setJarvisStatus('Connected','ok');
+    reply(data.response || '(empty reply)');
+  }catch(err){
+    console.error('Jarvis request failed', err);
+    setJarvisStatus('Not connected','bad');
+    reply(explainOllamaFailure(err));
   }
-  log.scrollTop = log.scrollHeight;
 }
 
 /* ===================== UPDATE PAGE ===================== */
@@ -2452,6 +2614,7 @@ function go(view){
   if(view==='attendance') renderAttendance();
   if(view==='inbox'){ renderGmailAccounts(); renderAcctFilter(); renderInbox(); }
   if(view==='email') renderEmailView();
+  if(view==='localai') testJarvis();
   if(view==='ai') renderAiPage();
 }
 
