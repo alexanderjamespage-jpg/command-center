@@ -474,6 +474,74 @@ body{
 .inbox-subject{font-size:12px;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .unread-dot{width:7px;height:7px;border-radius:50%;background:var(--blue);flex-shrink:0;align-self:center;}
 
+/* CALENDAR SOURCE SLIDER — glass pill strip, like the camera mode picker */
+.cal-slider{display:flex;gap:5px;overflow-x:auto;scroll-snap-type:x proximity;padding:6px;
+  border-radius:26px;background:rgba(20,22,32,0.55);border:1px solid rgba(255,255,255,0.12);
+  backdrop-filter:blur(28px) saturate(160%);-webkit-backdrop-filter:blur(28px) saturate(160%);
+  box-shadow:0 10px 30px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.08);
+  margin-bottom:14px;scrollbar-width:none;-ms-overflow-style:none;scroll-behavior:smooth;}
+.cal-slider::-webkit-scrollbar{display:none;}
+.cal-pill{scroll-snap-align:center;flex-shrink:0;display:flex;align-items:center;gap:7px;
+  padding:8px 15px;border-radius:20px;font-size:12.5px;font-weight:600;color:var(--dim);
+  cursor:pointer;white-space:nowrap;border:1px solid transparent;
+  transition:background .15s,color .15s,border-color .15s;}
+.cal-pill:hover{color:var(--text);background:rgba(255,255,255,0.05);}
+.cal-pill.active{background:rgba(255,255,255,0.11);color:var(--text);border-color:rgba(255,255,255,0.18);}
+.cal-pill .pdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.cal-pill .ct{font-size:10.5px;opacity:0.65;font-weight:500;}
+.cal-pill .px{background:none;border:none;color:var(--dim);cursor:pointer;font-size:11px;padding:0 0 0 2px;}
+.cal-pill .px:hover{color:var(--red);}
+.cal-pill.add{color:#8fb2e8;}
+.cal-pill.add:hover{background:rgba(91,132,196,0.16);}
+.type-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.type-opt{flex:1 1 120px;background:var(--panel2);border:1px solid var(--border);border-radius:14px;
+  padding:11px 12px;cursor:pointer;font-size:12px;}
+.type-opt:hover{border-color:var(--blue);}
+.type-opt.sel{border-color:var(--blue);background:rgba(91,132,196,0.16);}
+.type-opt .tn{font-weight:700;display:flex;align-items:center;gap:6px;}
+.type-opt .th{font-size:10.5px;color:var(--dim);margin-top:4px;line-height:1.45;}
+
+/* SPLIT LAYOUT — glass sidebar + main pane (Calendar, Mail) */
+.split{display:flex;gap:14px;align-items:flex-start;}
+.split-side{width:242px;flex-shrink:0;background:var(--panel);border:1px solid var(--border);
+  border-radius:20px;padding:10px;backdrop-filter:blur(28px) saturate(160%);
+  -webkit-backdrop-filter:blur(28px) saturate(160%);
+  box-shadow:0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
+  max-height:calc(100vh - 130px);overflow-y:auto;}
+.split-main{flex:1;min-width:0;}
+.side-head{font-size:10px;letter-spacing:0.7px;text-transform:uppercase;color:var(--dim);
+  padding:12px 9px 6px;display:flex;justify-content:space-between;align-items:center;}
+.side-head button{background:none;border:none;color:var(--dim);cursor:pointer;font-size:13px;padding:0 3px;}
+.side-head button:hover{color:var(--text);}
+.side-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:11px;cursor:pointer;
+  font-size:12.5px;border:1px solid transparent;}
+.side-item:hover{background:var(--panel2);}
+.side-item.active{background:rgba(91,132,196,0.18);border-color:rgba(91,132,196,0.32);}
+.side-item .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.side-item .ct{font-size:10.5px;color:var(--dim);flex-shrink:0;}
+.side-item.off .nm{opacity:0.45;}
+.side-check{width:14px;height:14px;accent-color:var(--blue);cursor:pointer;flex-shrink:0;margin:0;}
+.side-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.side-x{background:none;border:none;color:var(--dim);cursor:pointer;font-size:11px;flex-shrink:0;opacity:0;padding:0 2px;}
+.side-item:hover .side-x{opacity:1;}
+.side-x:hover{color:var(--red);}
+.side-btn{width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);
+  border-radius:11px;padding:8px 11px;font-size:12px;font-weight:600;cursor:pointer;margin-top:6px;text-align:left;}
+.side-btn:hover{border-color:var(--blue);}
+.side-note{font-size:10.5px;color:var(--dim);padding:4px 10px;line-height:1.5;}
+.mini-cal{padding:2px 4px 8px;}
+.mini-head{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;margin:4px 4px 8px;}
+.mini-head button{background:none;border:none;color:var(--dim);cursor:pointer;font-size:12px;padding:0 5px;}
+.mini-head button:hover{color:var(--text);}
+.field-label{font-size:11.5px;color:var(--dim);margin-bottom:6px;}
+.color-swatches{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.swatch{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid transparent;}
+.swatch.sel{border-color:var(--text);}
+@media (max-width:860px){
+  .split{flex-direction:column;}
+  .split-side{width:100%;max-height:none;}
+}
+
 /* EMAIL READING VIEW */
 .acct-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .acct-chip{display:flex;align-items:center;gap:7px;background:var(--panel2);border:1px solid var(--border);
@@ -641,9 +709,9 @@ body{
         <div class="cal-toolbar">
           <div class="cal-tool-left">
             <button class="cal-today-btn" onclick="calToday()">Today</button>
-            <div class="cal-nav"><span class="cal-nav-btn" onclick="calNav(-1)">‹</span></div>
-            <div class="cal-nav"><span class="cal-nav-btn" onclick="calNav(1)">›</span></div>
-            <div class="cal-label" id="calLabel">—</div>
+            <span class="cal-nav-btn" onclick="calNav(-1)">&lsaquo;</span>
+            <span class="cal-nav-btn" onclick="calNav(1)">&rsaquo;</span>
+            <div class="cal-label" id="calLabel">&mdash;</div>
           </div>
           <div class="cal-seg" id="calSeg">
             <button data-view="day" onclick="setCalView('day')">Day</button>
@@ -652,40 +720,7 @@ body{
             <button data-view="year" onclick="setCalView('year')">Year</button>
           </div>
         </div>
-
-        <div class="cal-layers-panel">
-          <div class="cal-layer-row">
-            <label><input type="checkbox" id="layer-school" checked onchange="toggleLayer('school')"> 📚 Assignments</label>
-          </div>
-          <div class="cal-layer-row">
-            <label><input type="checkbox" id="layer-attendance" checked onchange="toggleLayer('attendance')"> ✓ Attendance</label>
-          </div>
-          <div class="cal-layer-row">
-            <label><input type="checkbox" id="layer-google" onchange="toggleLayer('google')"> 📅 Google Calendar</label>
-            <button class="cal-layer-connect" id="google-connect-btn" onclick="connectGoogleCalendar()">Connect</button>
-          </div>
-          <div class="cal-layer-row">
-            <label><input type="checkbox" id="layer-apple" onchange="toggleLayer('apple')"> 🍎 Apple Calendar</label>
-            <button class="cal-layer-connect" id="apple-connect-btn" onclick="connectIcsFeed('apple')">Connect</button>
-          </div>
-          <div class="cal-layer-row">
-            <label><input type="checkbox" id="layer-paradigm" onchange="toggleLayer('paradigm')"> 🎓 Paradigm</label>
-            <button class="cal-layer-connect" id="paradigm-connect-btn" onclick="connectIcsFeed('paradigm')">Connect</button>
-          </div>
-          <div class="cal-layer-row">
-            <button class="cal-layer-connect" onclick="toggleFeedSettings()">⚙ Feeds</button>
-          </div>
-        </div>
-
-        <div class="card" id="feedSettings" style="display:none;margin-bottom:14px;">
-          <h4 style="font-size:11px;letter-spacing:0.5px;color:var(--dim);text-transform:uppercase;margin-bottom:10px;">Calendar feed links</h4>
-          <div style="font-size:11.5px;color:var(--dim);margin-bottom:6px;">🍎 Apple Calendar — Calendar app → right-click your calendar → Share Calendar → Public Calendar → copy link</div>
-          <input class="ai-input" id="feedUrlApple" style="width:100%;margin-bottom:12px;" placeholder="webcal://p01-calendars.icloud.com/published/...">
-          <div style="font-size:11.5px;color:var(--dim);margin-bottom:6px;">🎓 Paradigm — the school's public .ics link, if they publish one</div>
-          <input class="ai-input" id="feedUrlParadigm" style="width:100%;margin-bottom:12px;" placeholder="https://calendar.google.com/calendar/ical/.../public/basic.ics">
-          <button class="btn-primary" onclick="saveFeedSettings()">Save &amp; connect</button>
-          <div style="font-size:11.5px;color:var(--dim);margin-top:12px;line-height:1.6;">Saved on this device only — never in the code or on GitHub. If the direct fetch is blocked, a public relay is used to read the file, so avoid pasting a calendar you'd mind a third party seeing.</div>
-        </div>
+        <div class="cal-slider" id="calSlider"></div>
         <div class="cal-wrap"><div id="calBody"></div></div>
       </div>
 
@@ -727,17 +762,13 @@ body{
       <!-- INBOX -->
       <div class="view" id="v-inbox">
         <div class="inbox-head">
-          <div class="section-title" style="margin-bottom:0;">Inbox</div>
-          <div class="inbox-head-right acct-bar" id="gmailAccounts"></div>
+          <div class="section-title" id="mailTitle" style="margin-bottom:0;">All mail</div>
+          <div class="inbox-head-right">
+            <span class="inbox-status" id="mailStatus">Showing sample mail</span>
+            <button class="cal-add-btn" id="mailRefreshBtn" onclick="fetchAllGmail()" style="display:none;">↻ Refresh</button>
+          </div>
         </div>
-        <div class="inbox-filter-bar" id="inboxFilterBar">
-          <button class="inbox-filter-chip active" data-filter="all" onclick="setInboxFilter('all')">All</button>
-          <button class="inbox-filter-chip" data-filter="unread" onclick="setInboxFilter('unread')">Unread</button>
-          <button class="inbox-filter-chip" data-filter="teacher" onclick="setInboxFilter('teacher')">Teachers</button>
-          <button class="inbox-filter-chip" data-filter="admin" onclick="setInboxFilter('admin')">School</button>
-          <button class="inbox-filter-chip" data-filter="other" onclick="setInboxFilter('other')">Everything else</button>
-        </div>
-        <div class="inbox-filter-bar" id="acctFilterBar"></div>
+        <div class="cal-slider" id="mailSlider"></div>
         <div class="card" id="inboxList" style="padding:8px 12px;"></div>
       </div>
 
@@ -874,6 +905,30 @@ body{
     <div class="modal-meta">Everything on this day</div>
     <div id="d-events"></div>
     <button class="btn-ghost" style="margin-top:14px;" id="d-openday">Open day view →</button>
+  </div>
+</div>
+
+<!-- ADD CALENDAR -->
+<div class="modal-overlay" id="addCalModal" onclick="if(event.target===this) closeAddCalendar()">
+  <div class="modal-box">
+    <span class="modal-close" onclick="closeAddCalendar()">✕</span>
+    <div class="modal-title">Add a calendar</div>
+    <div class="modal-meta">Pick what kind it is, then paste the link</div>
+
+    <div class="field-label">Type</div>
+    <div class="type-row" id="addCalTypes"></div>
+
+    <div class="field-label">Name</div>
+    <input class="ai-input" id="addCalName" style="width:100%;margin-bottom:14px;" placeholder="Work, Family, Paradigm High…">
+
+    <div class="field-label" id="addCalUrlLabel">Link</div>
+    <textarea class="note-input" id="addCalUrl" style="margin-bottom:14px;font-size:11.5px;"></textarea>
+
+    <div class="field-label">Colour</div>
+    <div class="color-swatches" id="addCalColors"></div>
+
+    <button class="btn-primary" onclick="submitAddCalendar()">Add calendar</button>
+    <div class="side-note" style="padding:12px 0 0;">Saved on this device only. If a calendar can't be fetched directly, a public relay reads the file, so avoid adding anything private.</div>
   </div>
 </div>
 
@@ -1706,37 +1761,90 @@ function buildAttendanceEvents(){
   return ev;
 }
 let googleEvents = {};
-let appleEvents = {};
-let paradigmEvents = {};
 
-const calendarLayers = { school:true, attendance:true, google:false, apple:false, paradigm:false };
-try{ const saved = JSON.parse(localStorage.getItem('calendarLayers')); if(saved) Object.assign(calendarLayers, saved); }catch(e){}
-function saveCalendarLayers(){ try{ localStorage.setItem('calendarLayers', JSON.stringify(calendarLayers)); }catch(e){} }
-function toggleLayer(name){
-  calendarLayers[name] = document.getElementById('layer-'+name).checked;
-  saveCalendarLayers();
+/* ---------------------------------------------------------------
+   Subscribed calendars. Add as many as you like from the sidebar.
+   Only name/url/colour/enabled are saved; events are re-fetched.
+   --------------------------------------------------------------- */
+const FEED_COLORS = [
+  {k:'green',  hex:'#5aa87f'}, {k:'orange', hex:'#e8923a'}, {k:'purple', hex:'#8579b8'},
+  {k:'blue',   hex:'#5b84c4'}, {k:'red',    hex:'#d9776f'}, {k:'amber',  hex:'#c99a4a'}
+];
+
+const DEFAULT_FEEDS = [
+  { id:'f1', name:'iCloud — Personal', color:'green', type:'apple',
+    url:'webcal://p70-caldav.icloud.com/published/2/MTAyNjQ5NTc0MDMxMDI2NAnxrqpW6-ldti577B-krccryfKNY0cuECPS8DRusKGa' },
+  { id:'f2', name:'iCloud — Second', color:'purple', type:'apple',
+    url:'webcal://p70-caldav.icloud.com/published/2/MTAyNjQ5NTc0MDMxMDI2NAnxrqpW6-ldti577B-krcf9iH1dlTRQVYD5xMY74Eaf' },
+  { id:'f3', name:'Paradigm High', color:'orange', type:'google',
+    url:'https://calendar.google.com/calendar/render?cid=russ.andrews%40paradigmhigh.org' }
+];
+
+let feeds = DEFAULT_FEEDS.map(f=>Object.assign({enabled:true, events:{}, count:0, status:''}, f));
+try{
+  const saved = JSON.parse(localStorage.getItem('calFeeds') || 'null');
+  if(Array.isArray(saved) && saved.length){
+    feeds = saved.map(f=>Object.assign({enabled:true, events:{}, count:0, status:''}, f));
+  }
+}catch(e){}
+
+function saveFeeds(){
+  try{
+    localStorage.setItem('calFeeds', JSON.stringify(
+      feeds.map(f=>({ id:f.id, name:f.name, url:f.url, color:f.color, type:f.type, enabled:f.enabled }))
+    ));
+  }catch(e){}
+}
+function feedById(id){ return feeds.find(f=>f.id===id); }
+
+/* Which calendar you're looking at: 'all', a built-in key, or a feed id. */
+let calSelection = 'all';
+try{ calSelection = localStorage.getItem('calSelection') || 'all'; }catch(e){}
+
+let googleConnected = false;
+
+const BUILTIN_SOURCES = [
+  { k:'school',     icon:'📚', name:'Assignments' },
+  { k:'attendance', icon:'✓',  name:'Attendance' },
+  { k:'google',     icon:'📅', name:'Google' }
+];
+
+function selectCalendar(key, ev){
+  if(ev) ev.stopPropagation();
+  calSelection = key;
+  try{ localStorage.setItem('calSelection', key); }catch(e){}
+  renderCalendar();
+  // Slide the chosen one to the middle, the way the camera picker does.
+  const el = document.querySelector(`.cal-pill[data-key="${key}"]`);
+  if(el && el.scrollIntoView) el.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
+}
+
+function removeFeed(id, ev){
+  if(ev) ev.stopPropagation();
+  const f = feedById(id);
+  if(!f) return;
+  if(!confirm(`Remove "${f.name}" from your calendars?`)) return;
+  feeds = feeds.filter(x=>x.id!==id);
+  if(calSelection === id) calSelection = 'all';
+  saveFeeds();
   renderCalendar();
 }
-function initLayerCheckboxes(){
-  ['school','attendance','google','apple','paradigm'].forEach(n=>{
-    const el = document.getElementById('layer-'+n);
-    if(el) el.checked = calendarLayers[n];
-  });
+
+function countEvents(map){
+  let n = 0;
+  Object.keys(map || {}).forEach(k=>{ n += map[k].length; });
+  return n;
 }
-/* A Google calendar's own colour, when we have it. */
-function chipStyle(e){
-  if(!e.hex) return '';
-  const n = e.hex.replace('#','');
-  const r = parseInt(n.slice(0,2),16), g = parseInt(n.slice(2,4),16), b = parseInt(n.slice(4,6),16);
-  return `style="background:rgba(${r},${g},${b},0.22);color:${e.hex};"`;
-}
+
 function eventsOn(dateKey){
+  const all = calSelection === 'all';
   let out = [];
-  if(calendarLayers.school) out = out.concat(buildSchoolEventsCache[dateKey] || []);
-  if(calendarLayers.attendance) out = out.concat(buildAttendanceEventsCache[dateKey] || []);
-  if(calendarLayers.google) out = out.concat(googleEvents[dateKey] || []);
-  if(calendarLayers.apple) out = out.concat(appleEvents[dateKey] || []);
-  if(calendarLayers.paradigm) out = out.concat(paradigmEvents[dateKey] || []);
+  if(all || calSelection === 'school') out = out.concat(buildSchoolEventsCache[dateKey] || []);
+  if(all || calSelection === 'attendance') out = out.concat(buildAttendanceEventsCache[dateKey] || []);
+  if(all || calSelection === 'google') out = out.concat(googleEvents[dateKey] || []);
+  feeds.forEach(f=>{
+    if(all || calSelection === f.id) out = out.concat(f.events[dateKey] || []);
+  });
   return out;
 }
 let buildSchoolEventsCache = {};
@@ -1746,6 +1854,60 @@ function rebuildEventCaches(){
   buildAttendanceEventsCache = buildAttendanceEvents();
 }
 
+/* ---------------- the slider ---------------- */
+function renderCalSlider(){
+  const el = document.getElementById('calSlider');
+  if(!el) return;
+
+  const totals = {
+    school: countEvents(buildSchoolEventsCache),
+    attendance: countEvents(buildAttendanceEventsCache),
+    google: countEvents(googleEvents)
+  };
+  const grand = totals.school + totals.attendance + totals.google
+    + feeds.reduce((n,f)=>n + countEvents(f.events), 0);
+
+  const pill = (key, icon, name, count, dot, extra) => `
+    <div class="cal-pill ${calSelection===key?'active':''}" data-key="${key}" onclick="selectCalendar('${key}')">
+      ${dot ? `<span class="pdot" style="background:${dot};"></span>` : `<span>${icon}</span>`}
+      <span>${escapeHtml(name)}</span>
+      ${count ? `<span class="ct">${count}</span>` : ''}
+      ${extra || ''}
+    </div>`;
+
+  el.innerHTML =
+    pill('all', '◎', 'All calendars', grand, null) +
+    BUILTIN_SOURCES.map(s=>{
+      const isGoogle = s.k === 'google';
+      const label = isGoogle && !googleConnected ? 'Google — connect' : s.name;
+      const onclick = isGoogle && !googleConnected
+        ? `<div class="cal-pill" onclick="connectGoogleCalendar()"><span>📅</span><span>Google — connect</span></div>`
+        : null;
+      return onclick || pill(s.k, s.icon, s.name, totals[s.k], null);
+    }).join('') +
+    feeds.map(f=>{
+      const hex = (FEED_COLORS.find(c=>c.k===f.color) || FEED_COLORS[0]).hex;
+      const badge = f.status === '…' ? '<span class="ct">…</span>'
+                  : f.status === '!' ? '<span class="ct" style="color:var(--red);">failed</span>'
+                  : (f.count ? `<span class="ct">${f.count}</span>` : '');
+      const x = calSelection === f.id
+        ? `<button class="px" title="Remove" onclick="removeFeed('${f.id}', event)">✕</button>` : '';
+      return `
+        <div class="cal-pill ${calSelection===f.id?'active':''}" data-key="${f.id}" onclick="selectCalendar('${f.id}')">
+          <span class="pdot" style="background:${hex};"></span>
+          <span>${escapeHtml(f.name)}</span>
+          ${badge}${x}
+        </div>`;
+    }).join('') +
+    `<div class="cal-pill add" onclick="openAddCalendar()"><span>＋</span><span>Add</span></div>`;
+}
+
+function chipStyle(e){
+  if(!e.hex) return '';
+  const n = e.hex.replace('#','');
+  const r = parseInt(n.slice(0,2),16), g = parseInt(n.slice(2,4),16), b = parseInt(n.slice(4,6),16);
+  return `style="background:rgba(${r},${g},${b},0.22);color:${e.hex};"`;
+}
 function setCalView(v){ calView = v; renderCalendar(); }
 function calToday(){ calCursor = new Date(TODAY); renderCalendar(); }
 function calNav(dir){
@@ -1767,6 +1929,7 @@ function calLabel(){
 
 function renderCalendar(){
   document.getElementById('calLabel').textContent = calLabel();
+  renderCalSlider();
   document.querySelectorAll('#calSeg button').forEach(b=>b.classList.toggle('active', b.dataset.view===calView));
   const body = document.getElementById('calBody');
   if(calView==='month') body.innerHTML = monthHTML();
@@ -1918,8 +2081,6 @@ function visibleRange(){
   return [new Date(calCursor.getFullYear(),0,1), new Date(calCursor.getFullYear()+1,0,1)];
 }
 async function fetchGoogleCalendarEvents(){
-  const btn = document.getElementById('google-connect-btn');
-  if(btn) btn.textContent = 'Loading…';
   const [rangeStart, rangeEnd] = visibleRange();
   const headers = { Authorization:`Bearer ${googleAccessToken}` };
 
@@ -1968,15 +2129,12 @@ async function fetchGoogleCalendarEvents(){
       });
     }));
 
-    calendarLayers.google = true;
-    saveCalendarLayers();
-    const cb = document.getElementById('layer-google');
-    if(cb) cb.checked = true;
-    if(btn) btn.textContent = `${cals.length} calendar${cals.length===1?'':'s'} ✓`;
+    googleConnected = true;
+    calSelection = 'google';
+    try{ localStorage.setItem('calSelection', calSelection); }catch(e){}
     renderCalendar();
   }catch(err){
     console.error(err);
-    if(btn) btn.textContent = 'Retry';
     alert("Couldn't load your Google Calendars: " + err.message + "\n\nCheck the Calendar API is enabled and this site's URL is an Authorized JavaScript origin.");
   }
 }
@@ -1992,84 +2150,58 @@ function connectGoogleCalendar(){
 }
 
 /* =====================================================================
-   .ics FEEDS (Apple Calendar + Paradigm) — parsed right here in the page.
+   SUBSCRIBED CALENDARS — .ics feeds parsed right here in the page.
 
-   Calendar servers don't send CORS headers, so the browser can't just
-   fetch an .ics file. We try three routes in order:
-     1. /api/calendar-feed  — your own serverless function, if you added it
-     2. a direct fetch      — works for the rare feed that allows it
-     3. a public CORS relay — no setup, but a third party sees the request
-   Feed URLs are typed into the ⚙ Feeds panel and saved on this device only,
-   so they never end up in the code or on GitHub.
+   Calendar servers don't send CORS headers, so a plain fetch usually
+   fails. We try the direct URL first, then a public relay. Feed URLs are
+   kept in this device's storage once you edit them, not in the code.
    ===================================================================== */
-const ICS_SOURCES = {
-  apple:    { label:'Apple Calendar', color:'green',  store:d=>{ appleEvents = d; } },
-  paradigm: { label:'Paradigm',       color:'orange', store:d=>{ paradigmEvents = d; } }
-};
 const CORS_RELAYS = [
   u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
   u => 'https://corsproxy.io/?url=' + encodeURIComponent(u)
 ];
 
-let icsFeedUrls = { apple:'', paradigm:'' };
-try{ Object.assign(icsFeedUrls, JSON.parse(localStorage.getItem('icsFeedUrls') || '{}')); }catch(e){}
+/* Accepts webcal:// links, Google "Add to Calendar" links (?cid=),
+   Google embed links (?src=), a bare calendar ID, or a real .ics URL. */
+function normalizeFeedUrl(raw){
+  let u = String(raw || '').trim().split('#')[0];
+  if(!u) return '';
+  u = u.replace(/^webcal:\/\//i, 'https://');
 
-function toggleFeedSettings(){
-  const el = document.getElementById('feedSettings');
-  const showing = el.style.display !== 'none';
-  el.style.display = showing ? 'none' : '';
-  if(!showing){
-    document.getElementById('feedUrlApple').value = icsFeedUrls.apple || '';
-    document.getElementById('feedUrlParadigm').value = icsFeedUrls.paradigm || '';
+  let id = null;
+  const cid = u.match(/[?&]cid=([^&]+)/i);
+  const src = u.match(/[?&]src=([^&]+)/i);
+  if(cid) id = decodeURIComponent(cid[1]);
+  else if(src) id = decodeURIComponent(src[1]);
+  else if(/^[^\s\/]+@[^\s\/]+\.[a-z]{2,}$/i.test(u)) id = u;
+
+  if(id){
+    if(id.indexOf('@') === -1){
+      try{
+        const decoded = atob(id.replace(/-/g,'+').replace(/_/g,'/'));
+        if(decoded.indexOf('@') !== -1) id = decoded;
+      }catch(e){}
+    }
+    if(id.indexOf('@') !== -1)
+      return `https://calendar.google.com/calendar/ical/${encodeURIComponent(id)}/public/basic.ics`;
   }
-}
-function saveFeedSettings(){
-  icsFeedUrls.apple = document.getElementById('feedUrlApple').value.trim();
-  icsFeedUrls.paradigm = document.getElementById('feedUrlParadigm').value.trim();
-  try{ localStorage.setItem('icsFeedUrls', JSON.stringify(icsFeedUrls)); }catch(e){}
-  document.getElementById('feedSettings').style.display = 'none';
-  ['apple','paradigm'].forEach(s=>{ if(icsFeedUrls[s]) connectIcsFeed(s); });
+  return u;
 }
 
-/* Grabs the raw .ics text, trying each route until one works. */
-async function fetchIcsText(source){
-  const attempts = [];
-  const userUrl = (icsFeedUrls[source] || '').trim().replace(/^webcal:\/\//i, 'https://');
-
-  attempts.push(async ()=>{
-    const r = await fetch(`/api/calendar-feed?source=${source}&raw=1`);
-    if(!r.ok) throw new Error('no serverless function');
-    const t = await r.text();
-    if(!/BEGIN:VCALENDAR/i.test(t)) throw new Error('not a calendar');
-    return t;
+async function fetchOneIcs(url){
+  const routes = [ async ()=>{ const r = await fetch(url); if(!r.ok) throw new Error('direct ' + r.status); return r.text(); } ];
+  CORS_RELAYS.forEach(build=>{
+    routes.push(async ()=>{ const r = await fetch(build(url)); if(!r.ok) throw new Error('relay ' + r.status); return r.text(); });
   });
-
-  if(userUrl){
-    attempts.push(async ()=>{
-      const r = await fetch(userUrl);
-      if(!r.ok) throw new Error('direct fetch ' + r.status);
-      return r.text();
-    });
-    CORS_RELAYS.forEach(build=>{
-      attempts.push(async ()=>{
-        const r = await fetch(build(userUrl));
-        if(!r.ok) throw new Error('relay ' + r.status);
-        return r.text();
-      });
-    });
-  }
-
-  let lastErr = 'no route worked';
-  for(const attempt of attempts){
+  let lastErr = 'could not be reached';
+  for(const route of routes){
     try{
-      const text = await attempt();
+      const text = await route();
       if(/BEGIN:VCALENDAR/i.test(text)) return text;
-      lastErr = 'that URL returned a web page, not a calendar file';
+      lastErr = 'returned a web page, not a calendar file';
     }catch(e){ lastErr = e.message; }
   }
-  throw new Error(userUrl
-    ? `Couldn't load that feed (${lastErr}). Check the link is the .ics share URL and is still shared publicly.`
-    : 'No feed URL set — click ⚙ Feeds and paste the calendar\'s .ics link.');
+  throw new Error(lastErr);
 }
 
 /* ---- ICS parsing ---- */
@@ -2083,12 +2215,10 @@ function icsDate(value, params){
   }
   const m = value.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z)?$/);
   if(!m) return null;
-  const d = m[7]
-    ? new Date(Date.UTC(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +m[6]))
-    : new Date(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +m[6]);
+  const d = m[7] ? new Date(Date.UTC(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +m[6]))
+                 : new Date(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +m[6]);
   return { date:d, allDay:false };
 }
-/* Repeating events — a weekly late start should land on every week. */
 function icsRepeat(rrule, start, from, to){
   const R = {};
   rrule.split(';').forEach(p=>{ const [k,v] = p.split('='); if(k) R[k.toUpperCase()] = v; });
@@ -2165,26 +2295,95 @@ function parseIcs(raw, color, kind){
   return { events: byDate, total };
 }
 
-async function connectIcsFeed(source){
-  const cfg = ICS_SOURCES[source];
-  if(!cfg) return;
-  const btn = document.getElementById(source+'-connect-btn');
-  if(btn) btn.textContent = 'Loading…';
+/* ---- loading ---- */
+async function loadFeed(id, quiet){
+  const f = feedById(id);
+  if(!f || !f.url) return;
+  f.status = '…';
+  renderCalSlider();
   try{
-    const text = await fetchIcsText(source);
-    const { events, total } = parseIcs(text, cfg.color, source);
-    cfg.store(events);
-    calendarLayers[source] = true;
-    saveCalendarLayers();
-    const cb = document.getElementById('layer-'+source);
-    if(cb) cb.checked = true;
-    if(btn) btn.textContent = `${total} events ✓`;
+    const text = await fetchOneIcs(normalizeFeedUrl(f.url));
+    const parsed = parseIcs(text, f.color, 'feed');
+    f.events = parsed.events;
+    f.count = parsed.total;
+    f.status = '';
     renderCalendar();
   }catch(e){
-    console.error(e);
-    if(btn) btn.textContent = 'Retry';
-    alert(`${cfg.label}: ${e.message}`);
+    console.error(f.name, e);
+    f.events = {}; f.count = 0; f.status = '!';
+    renderCalSlider();
+    if(!quiet) alert(`${f.name}: ${e.message}`);
   }
+}
+async function refreshAllFeeds(quiet){
+  for(const f of feeds){ await loadFeed(f.id, quiet); }
+}
+
+/* ---- adding a calendar ---- */
+const CAL_TYPES = [
+  { k:'apple',  icon:'🍎', name:'Apple / iCloud', color:'green',
+    hint:'Calendar app → right-click the calendar → Share Calendar → tick Public Calendar → copy link',
+    label:'Published iCloud link', ph:'webcal://p70-caldav.icloud.com/published/…' },
+  { k:'google', icon:'📅', name:'Google', color:'blue',
+    hint:'Use the "Add to Google Calendar" link, the embed link, or the calendar ID itself',
+    label:'Google link or calendar ID', ph:'https://calendar.google.com/calendar/render?cid=… or name@group.calendar.google.com' },
+  { k:'school', icon:'🎓', name:'School / other', color:'orange',
+    hint:'Any public .ics feed — school calendars, sports schedules, holiday calendars',
+    label:'.ics feed URL', ph:'https://example.org/calendar.ics' }
+];
+
+let addCalType = 'apple';
+let addCalColor = 'green';
+
+function openAddCalendar(){
+  addCalType = 'apple';
+  addCalColor = FEED_COLORS[feeds.length % FEED_COLORS.length].k;
+  document.getElementById('addCalName').value = '';
+  document.getElementById('addCalUrl').value = '';
+  renderAddCalTypes();
+  renderColorSwatches();
+  document.getElementById('addCalModal').classList.add('show');
+}
+function closeAddCalendar(){ document.getElementById('addCalModal').classList.remove('show'); }
+
+function pickCalType(k){
+  addCalType = k;
+  const t = CAL_TYPES.find(x=>x.k===k);
+  if(t){
+    addCalColor = t.color;
+    renderColorSwatches();
+  }
+  renderAddCalTypes();
+}
+function renderAddCalTypes(){
+  document.getElementById('addCalTypes').innerHTML = CAL_TYPES.map(t=>`
+    <div class="type-opt ${t.k===addCalType?'sel':''}" onclick="pickCalType('${t.k}')">
+      <div class="tn">${t.icon} ${t.name}</div>
+      <div class="th">${t.hint}</div>
+    </div>`).join('');
+  const t = CAL_TYPES.find(x=>x.k===addCalType) || CAL_TYPES[0];
+  document.getElementById('addCalUrlLabel').textContent = t.label;
+  document.getElementById('addCalUrl').placeholder = t.ph;
+}
+function pickCalColor(k){ addCalColor = k; renderColorSwatches(); }
+function renderColorSwatches(){
+  document.getElementById('addCalColors').innerHTML = FEED_COLORS.map(c=>
+    `<span class="swatch ${c.k===addCalColor?'sel':''}" style="background:${c.hex};" onclick="pickCalColor('${c.k}')"></span>`
+  ).join('');
+}
+function submitAddCalendar(){
+  const name = document.getElementById('addCalName').value.trim();
+  const url = document.getElementById('addCalUrl').value.trim();
+  if(!url){ alert('Paste the calendar link first.'); return; }
+  const t = CAL_TYPES.find(x=>x.k===addCalType) || CAL_TYPES[0];
+  const id = 'f' + Date.now();
+  feeds.push({ id, name: name || t.name + ' calendar', url, color: addCalColor,
+               type: addCalType, enabled:true, events:{}, count:0, status:'' });
+  saveFeeds();
+  closeAddCalendar();
+  calSelection = id;
+  renderCalendar();
+  loadFeed(id);
 }
 
 /* ---- ADD TO CALENDAR ---- */
@@ -2355,20 +2554,79 @@ const SAMPLE_INBOX = [
   {a:'🏫',s:'School Admin',subj:'Picture retake day scheduled for next month',date:'5d ago',unread:false,type:'admin'},
 ];
 let inboxMsgs = SAMPLE_INBOX.slice();
-let inboxFilter = 'all';
-function setInboxFilter(f){
-  inboxFilter = f;
-  document.querySelectorAll('.inbox-filter-chip').forEach(c=>c.classList.toggle('active', c.dataset.filter===f));
+const MAIL_CATEGORIES = [
+  {k:'all',     icon:'📥', name:'All mail'},
+  {k:'unread',  icon:'●',  name:'Unread'},
+  {k:'teacher', icon:'👩‍🏫', name:'Teachers'},
+  {k:'admin',   icon:'🏫', name:'School'},
+  {k:'other',   icon:'✉️', name:'Everything else'}
+];
+
+/* One selection at a time: a category key, or an account id. */
+let mailSelection = 'all';
+
+function selectMailbox(key, ev){
+  if(ev) ev.stopPropagation();
+  mailSelection = key;
+  renderMailSlider();
   renderInbox();
+  const el = document.querySelector(`#mailSlider .cal-pill[data-key="${key}"]`);
+  if(el && el.scrollIntoView) el.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
 }
+
+function messageMatches(m, key){
+  if(key === 'all') return true;
+  if(key === 'unread') return m.unread;
+  if(['teacher','admin','other'].indexOf(key) !== -1) return m.type === key;
+  return m.acctId === key;         // an account id
+}
+function mailCount(key){ return inboxMsgs.filter(m=>messageMatches(m, key)).length; }
+
+function renderMailSlider(){
+  const el = document.getElementById('mailSlider');
+  if(!el) return;
+
+  const cats = MAIL_CATEGORIES.map(c=>{
+    const n = mailCount(c.k);
+    return `<div class="cal-pill ${mailSelection===c.k?'active':''}" data-key="${c.k}" onclick="selectMailbox('${c.k}')">
+      <span>${c.icon}</span><span>${c.name}</span>${n ? `<span class="ct">${n}</span>` : ''}
+    </div>`;
+  }).join('');
+
+  const accts = gmailAccounts.map(a=>{
+    const unread = inboxMsgs.filter(m=>m.acctId===a.id && m.unread).length;
+    const x = mailSelection === a.id
+      ? `<button class="px" title="Disconnect" onclick="disconnectGmail('${a.id}', event)">✕</button>` : '';
+    return `<div class="cal-pill ${mailSelection===a.id?'active':''}" data-key="${a.id}" onclick="selectMailbox('${a.id}')">
+      <span class="pdot" style="background:${a.color};"></span>
+      <span>${escapeHtml(a.email.split('@')[0])}</span>
+      ${unread ? `<span class="ct">${unread}</span>` : ''}${x}
+    </div>`;
+  }).join('');
+
+  el.innerHTML = cats + accts +
+    `<div class="cal-pill add" onclick="connectGmail()"><span>＋</span><span>${gmailAccounts.length ? 'Add account' : 'Connect Gmail'}</span></div>`;
+
+  const title = document.getElementById('mailTitle');
+  if(title){
+    const cat = MAIL_CATEGORIES.find(c=>c.k===mailSelection);
+    const acct = gmailAccounts.find(a=>a.id===mailSelection);
+    title.textContent = cat ? cat.name : (acct ? acct.email : 'All mail');
+  }
+  const status = document.getElementById('mailStatus');
+  const refresh = document.getElementById('mailRefreshBtn');
+  if(status){
+    const errs = gmailAccounts.filter(a=>a.error);
+    status.textContent = gmailLoading ? 'Loading…'
+      : gmailAccounts.length ? `${gmailAccounts.length} account${gmailAccounts.length===1?'':'s'} · ${inboxMsgs.length} messages${errs.length ? ' · ' + errs.length + ' needs attention' : ''}`
+      : 'Showing sample mail';
+    status.classList.toggle('on', gmailAccounts.length > 0 && !gmailLoading);
+  }
+  if(refresh) refresh.style.display = gmailAccounts.length ? '' : 'none';
+}
+
 function renderInbox(){
-  const filtered = inboxMsgs.filter(m=>{
-    if(m.acctId && !accountOn(m.acctId)) return false;
-    if(acctFilter !== 'all' && m.acctId !== acctFilter) return false;
-    if(inboxFilter==='all') return true;
-    if(inboxFilter==='unread') return m.unread;
-    return m.type===inboxFilter;
-  });
+  const filtered = inboxMsgs.filter(m=>messageMatches(m, mailSelection));
   document.getElementById('inboxList').innerHTML = filtered.map(m=>`
     <div class="inbox-item ${m.unread?'unread':''}" ${m.id?`onclick="openEmail('${m.acctId}','${m.id}')"`:''}>
       <div class="inbox-avatar">${m.a}</div>
@@ -2378,8 +2636,9 @@ function renderInbox(){
         ${m.snippet ? `<div class="inbox-snippet">${escapeHtml(m.snippet)}</div>` : ''}
       </div>
       ${m.unread?'<div class="unread-dot"></div>':''}
-    </div>`).join('') || '<div class="placeholder">No messages match this filter.</div>';
+    </div>`).join('') || '<div class="placeholder">Nothing here right now.</div>';
 }
+
 function escapeHtml(s){
   return String(s==null?'':s).replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
@@ -2407,43 +2666,6 @@ const ADMIN_SENDER_HINTS = ['noreply','no-reply','donotreply','infinitecampus','
 let gmailTokenClient = null;
 let gmailAccounts = [];   // [{id, email, token, color, error}]
 let gmailLoading = false;
-let acctFilter = 'all';   // 'all', or a single account id to view on its own
-
-/* An account that's switched off stays connected but is hidden from the
-   inbox, so you can read one mailbox at a time without signing out. */
-function accountOn(id){
-  const a = gmailAccounts.find(x=>x.id===id);
-  return !a || a.enabled !== false;
-}
-function toggleGmailAccount(id){
-  const a = gmailAccounts.find(x=>x.id===id);
-  if(!a) return;
-  a.enabled = a.enabled === false;
-  if(a.enabled === false && acctFilter === id) acctFilter = 'all';
-  renderGmailAccounts();
-  renderAcctFilter();
-  renderInbox();
-  updateUnreadBadge();
-}
-
-/* ---- connecting accounts ---- */
-function connectGmail(){
-  if(typeof google === 'undefined' || !google.accounts){
-    alert("Google's sign-in script hasn't loaded yet — check your connection and try again in a moment.");
-    return;
-  }
-  if(!gmailTokenClient){
-    gmailTokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: GMAIL_CLIENT_ID,
-      scope: GMAIL_SCOPE,
-      callback: (t)=>{ if(t && t.access_token) registerGmailAccount(t.access_token); }
-    });
-  }
-  // 'select_account' forces the account chooser every time, which is how you
-  // add a second inbox instead of silently reusing the first one.
-  gmailTokenClient.requestAccessToken({ prompt:'select_account' });
-}
-
 async function registerGmailAccount(token){
   try{
     const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
@@ -2480,12 +2702,13 @@ async function registerGmailAccount(token){
   }
 }
 
-function disconnectGmail(id){
+function disconnectGmail(id, ev){
+  if(ev) ev.stopPropagation();
   gmailAccounts = gmailAccounts.filter(a=>a.id!==id);
   openEmails = openEmails.filter(e=>e.acctId!==id);
-  if(acctFilter === id) acctFilter = 'all';
+  if(mailSelection === id) mailSelection = 'all';
   if(gmailAccounts.length) fetchAllGmail();
-  else { inboxMsgs = SAMPLE_INBOX.slice(); renderGmailAccounts(); renderAcctFilter(); renderInbox(); updateUnreadBadge(); }
+  else { inboxMsgs = SAMPLE_INBOX.slice(); renderMailSlider(); renderInbox(); updateUnreadBadge(); }
 }
 
 /* ---- header parsing ---- */
@@ -2562,7 +2785,7 @@ async function fetchGmailFor(acct){
 async function fetchAllGmail(){
   if(!gmailAccounts.length) return;
   gmailLoading = true;
-  renderGmailAccounts();
+  renderMailSlider();
   const all = [];
   for(const acct of gmailAccounts){
     if(!acct.token){ acct.error = 'signed out'; continue; }
@@ -2577,53 +2800,12 @@ async function fetchAllGmail(){
   all.sort((a,b)=>b.ts - a.ts);
   inboxMsgs = all;
   gmailLoading = false;
-  renderGmailAccounts();
-  renderAcctFilter();
+  renderMailSlider();
   renderInbox();
   updateUnreadBadge();
 }
 
 /* ---- account bar + account filter ---- */
-function renderGmailAccounts(){
-  const el = document.getElementById('gmailAccounts');
-  if(!el) return;
-  const chips = gmailAccounts.map(a=>`
-    <span class="acct-chip toggleable ${a.enabled===false?'off':'on'}"
-          title="${a.enabled===false?'Show this account':'Hide this account'}"
-          onclick="toggleGmailAccount('${a.id}')">
-      <span class="acct-switch"></span>
-      <span class="acct-dot" style="background:${a.color};"></span>
-      <span>${escapeHtml(a.email)}</span>
-      ${a.error ? `<span class="acct-err">(${escapeHtml(a.error)})</span>` : ''}
-      <button class="acct-x" title="Disconnect" onclick="event.stopPropagation(); disconnectGmail('${a.id}')">✕</button>
-    </span>`).join('');
-  const addLabel = gmailAccounts.length ? '＋ Add account' : 'Connect Gmail';
-  el.innerHTML = chips
-    + (gmailLoading ? '<span class="inbox-status">Loading…</span>' : '')
-    + `<button class="cal-add-btn" onclick="connectGmail()">${addLabel}</button>`
-    + (gmailAccounts.length ? `<button class="cal-add-btn" onclick="fetchAllGmail()">↻ Refresh</button>` : '')
-    + (gmailAccounts.length ? '' : '<span class="inbox-status">Showing sample mail</span>');
-}
-function setAcctFilter(id){ acctFilter = id; renderAcctFilter(); renderInbox(); }
-function renderAcctFilter(){
-  const el = document.getElementById('acctFilterBar');
-  if(!el) return;
-  const on = gmailAccounts.filter(a=>a.enabled !== false);
-  const off = gmailAccounts.filter(a=>a.enabled === false);
-  let html = '';
-  if(on.length > 1){
-    html += `<button class="inbox-filter-chip ${acctFilter==='all'?'active':''}" onclick="setAcctFilter('all')">All accounts</button>`
-      + on.map(a=>`
-        <button class="inbox-filter-chip ${acctFilter===a.id?'active':''}" onclick="setAcctFilter('${a.id}')">
-          <span class="acct-dot" style="background:${a.color};display:inline-block;margin-right:6px;"></span>${escapeHtml(a.email.split('@')[0])}
-        </button>`).join('');
-  }
-  if(off.length){
-    html += `<span class="acct-hint" style="align-self:center;margin-left:4px;">Hidden: ${off.map(a=>escapeHtml(a.email)).join(', ')}</span>`;
-  }
-  el.innerHTML = html;
-}
-
 /* ---- reading a message: several stay open as tabs ---- */
 let openEmails = [];      // [{key, acctId, id, subject, from, to, date, body, loading}]
 let activeEmailKey = null;
@@ -2759,7 +2941,7 @@ function openGmailMessage(acctId, id){
 }
 
 function updateUnreadBadge(){
-  const n = inboxMsgs.filter(m=>m.unread && (!m.acctId || accountOn(m.acctId))).length;
+  const n = inboxMsgs.filter(m=>m.unread).length;
   const badge = document.querySelector('.bell .badge');
   if(badge){ badge.textContent = n; badge.style.display = n ? '' : 'none'; }
 }
@@ -3120,12 +3302,17 @@ function go(view){
   else if(view==='attdetail') document.querySelector('.nav-item[data-view="attendance"]').classList.add('active');
   else if(view==='email') document.querySelector('.nav-item[data-view="inbox"]').classList.add('active');
   document.getElementById('topTitle').textContent = titles[view] || 'Command Center';
-  document.querySelector('.content').scrollTop = 0;
+  const content = document.querySelector('.content');
+  if(content) content.scrollTop = 0;
   if(view==='dashboard'){ renderClassGrid(); renderDash(); }
   if(view==='workspace' && !currentWorkspace) renderWorkspacePicker();
-  if(view==='calendar'){ rebuildEventCaches(); renderCalendar(); }
+  if(view==='calendar'){
+    rebuildEventCaches();
+    renderCalendar();
+    if(!window._feedsLoaded){ window._feedsLoaded = true; refreshAllFeeds(true); }
+  }
   if(view==='attendance') renderAttendance();
-  if(view==='inbox'){ renderGmailAccounts(); renderAcctFilter(); renderInbox(); }
+  if(view==='inbox'){ renderMailSlider(); renderInbox(); }
   if(view==='email') renderEmailView();
   if(view==='localai') testJarvis();
   if(view==='ai') renderAiPage();
@@ -3133,21 +3320,30 @@ function go(view){
 
 /* ===================== INIT ===================== */
 function initApp(){
-  hydrateData();
-  rebuildEventCaches();
-  seedConversations();
-  renderDash();
-  renderClassGrid();
-  initLayerCheckboxes();
-  renderCalendar();
-  renderAttendance();
-  renderGmailAccounts();
-  renderAcctFilter();
-  renderInbox();
-  renderChangelog();
-  renderAiPage();
-  document.querySelectorAll('.nav-item[data-view]').forEach(item=>item.addEventListener('click', ()=>go(item.dataset.view)));
+  // Navigation is wired up before anything renders, so if one panel throws,
+  // you can still move around the app instead of being stuck on Dashboard.
+  document.querySelectorAll('.nav-item[data-view]').forEach(item=>
+    item.addEventListener('click', ()=>go(item.dataset.view)));
+
+  const safe = (label, fn)=>{
+    try{ fn(); }
+    catch(e){ console.error('Failed to render ' + label + ':', e); }
+  };
+
+  safe('data', hydrateData);
+  safe('event caches', rebuildEventCaches);
+  safe('AI history', seedConversations);
+  safe('dashboard list', renderDash);
+  safe('class grid', renderClassGrid);
+  safe('calendar sources', renderCalSlider);
+  safe('calendar', renderCalendar);
+  safe('attendance', renderAttendance);
+  safe('mailboxes', renderMailSlider);
+  safe('inbox', renderInbox);
+  safe('changelog', renderChangelog);
+  safe('AI page', renderAiPage);
 }
+
 document.addEventListener('DOMContentLoaded', initApp);
 </script>
 </body>
