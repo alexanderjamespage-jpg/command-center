@@ -855,6 +855,10 @@ body{
             <input type="checkbox" id="jarvisUseData"> Let Jarvis see my school data
           </label>
           <div style="font-size:11px;color:var(--dim);margin:-4px 0 12px;line-height:1.5;">Sends your classes, grades, assignments, attendance and recent email subjects along with each question. It only ever goes to your own Mac mini.</div>
+          <label class="cal-layer-row" style="margin-bottom:8px;cursor:pointer;">
+            <input type="checkbox" id="jarvisPrefetch"> Pre-write plans in the background
+          </label>
+          <div style="font-size:11px;color:var(--dim);margin:-4px 0 12px;line-height:1.5;">When the app opens, Jarvis writes plans for your next few assignments so they're already there when you look. Plans are saved on this device.</div>
           <label class="cal-layer-row" style="margin-bottom:12px;cursor:pointer;">
             <input type="checkbox" id="jarvisSkipHeader"> Send ngrok skip-warning header
           </label>
@@ -1843,15 +1847,40 @@ async function wsGradeReview(classId, idx, list){
   if(btn){ btn.disabled = false; btn.textContent = a.review ? '✦ Review again' : '✦ Get estimate & feedback'; }
 }
 
-/* ---- the plan ---- */
-async function workspaceAsk(classId, idx, list, redo, targetId){
+/* ---------------------------------------------------------------
+   PLAN CACHE — plans are written once, saved on this device, and
+   quietly pre-written in the background so they're already waiting
+   when you open an assignment.
+   --------------------------------------------------------------- */
+let planCache = {};
+try{ planCache = JSON.parse(localStorage.getItem('planCache') || '{}'); }catch(e){}
+
+function planKey(classId, list, a){
+  // The requirement text is part of the key, so if a teacher edits the
+  // assignment the old plan is dropped instead of quietly going stale.
+  const stamp = String(a.req || '').length + ':' + (a.turnIn && a.turnIn.length ? 'submitted' : 'open');
+  return classId + '|' + list + '|' + a.name + '|' + stamp;
+}
+function savePlan(classId, list, a){
+  planCache[planKey(classId, list, a)] = { plan:a.plan, ts:Date.now() };
+  try{ localStorage.setItem('planCache', JSON.stringify(planCache)); }catch(e){}
+}
+function loadCachedPlans(){
+  const cutoff = Date.now() - 30*24*3600*1000;   // forget anything older than a month
+  Object.entries(classes).forEach(([id,c])=>{
+    ['upcoming','past'].forEach(list=>{
+      c[list].forEach(a=>{
+        const hit = planCache[planKey(id, list, a)];
+        if(hit && hit.ts > cutoff) a.plan = hit.plan;
+      });
+    });
+  });
+}
+
+/* Writes one plan and returns the text. Used by the page and the prefetcher. */
+async function generatePlan(classId, idx, list){
   const c = classes[classId];
   const a = wsItem(classId, idx, list);
-  const box = document.getElementById(targetId || 'wsAiOut');
-  if(!box) return;
-  if(redo) a.plan = null;
-  box.innerHTML = '<div class="email-loading">Jarvis is reading the assignment and your past work in this class…</div>';
-
   const related = wsEmails(classId, a);
   const focus =
     'FOCUS ASSIGNMENT (answer about this one):\n' +
@@ -1863,17 +1892,72 @@ async function workspaceAsk(classId, idx, list, redo, targetId){
     `My graded work in this class: ${c.past.map(p=>p.name + ' ' + p.score).join('; ') || 'none yet'}\n` +
     `Related emails: ${related.length ? related.map(m=>m.s + ' — ' + m.subj).join(' | ') : 'none'}`;
 
+  const out = await jarvisChat([
+    { role:'system', content: jarvisSystemPrompt(focus) },
+    { role:'user', content:
+        `Walk me through finishing "${a.name}" properly. Number the main stages, and under each one give the specific sub-steps, what I need in front of me, roughly how long it takes, and how I know that stage is done. ` +
+        `Finish with a short checklist to run against the requirements before turning it in. Be concrete about this assignment, not generic study advice.` }
+  ], { temperature:0.5 });
+
+  a.plan = out;
+  savePlan(classId, list, a);
+  return out;
+}
+
+/* After the app loads, quietly write plans for the assignments due soonest,
+   so they're already on the page when you get there. */
+let prefetchDone = false;
+async function prefetchPlans(){
+  if(prefetchDone || !jarvisPrefetch) return;
+  prefetchDone = true;
+
+  // Don't bother the Mac mini if it isn't answering.
   try{
-    const out = await jarvisChat([
-      { role:'system', content: jarvisSystemPrompt(focus) },
-      { role:'user', content:
-          `Walk me through finishing "${a.name}" properly. Number the main stages, and under each one give the specific sub-steps, what I need in front of me, roughly how long it takes, and how I know that stage is done. ` +
-          `Finish with a short checklist to run against the requirements before turning it in. Be concrete about this assignment, not generic study advice.` }
-    ], { temperature:0.5 });
-    a.plan = out;
+    const probe = await fetch(`${ollamaUrl}/api/tags`, { headers: ollamaHeaders() });
+    if(!probe.ok) return;
+  }catch(e){ return; }
+
+  const queue = [];
+  Object.entries(classes).forEach(([id,c])=>{
+    c.upcoming.forEach((a,idx)=>{
+      if(!a.points || a.plan) return;
+      const d = parseDue(a.due);
+      if(!d || d < TODAY) return;
+      queue.push({ id, idx, when:d });
+    });
+  });
+  queue.sort((x,y)=>x.when - y.when);
+
+  for(const item of queue.slice(0, PREFETCH_LIMIT)){
+    try{
+      await generatePlan(item.id, item.idx, 'upcoming');
+      // If you happen to be looking at it right now, fill it in live.
+      if(currentWorkspace && currentWorkspace.classId === item.id && currentWorkspace.idx === item.idx){
+        openWorkspace(item.id, item.idx, 'upcoming');
+      }
+    }catch(e){
+      console.warn('Plan prefetch stopped:', e.message);
+      break;
+    }
+    await new Promise(r=>setTimeout(r, 400));   // breathe between requests
+  }
+}
+
+/* ---- the plan ---- */
+async function workspaceAsk(classId, idx, list, redo, targetId){
+  const c = classes[classId];
+  const a = wsItem(classId, idx, list);
+  const box = document.getElementById(targetId || 'wsAiOut');
+  if(!box) return;
+  if(redo) a.plan = null;
+  box.innerHTML = '<div class="email-loading">Jarvis is reading the assignment and your past work in this class…</div>';
+
+  try{
+    const out = await generatePlan(classId, idx, list);
     box.innerHTML = `<div style="white-space:pre-wrap;">${escapeHtml(out)}</div>`
       + (a.studyTime ? `<div class="ws-time-pill">⏱ ${a.studyTime}</div>` : '');
   }catch(e){
+    const related = wsEmails(classId, a);
     box.innerHTML = `<div class="ws-empty">Jarvis isn't reachable — ${escapeHtml(e.message)}</div>
       <ol style="margin:10px 0 0 18px;">${buildAiSummary(c, a, related).steps.map(s=>`<li>${s}</li>`).join('')}</ol>`;
   }
@@ -3557,9 +3641,12 @@ try{
    warning page instead of JSON. */
 let ollamaSkipHeader = false;
 let jarvisUseData = true;   // send grades / attendance / email as context
+let jarvisPrefetch = true;  // pre-write plans in the background at startup
+const PREFETCH_LIMIT = 6;   // how many upcoming assignments to get ahead on
 try{
   ollamaSkipHeader = localStorage.getItem('ollamaSkipHeader') === '1';
   jarvisUseData = localStorage.getItem('jarvisUseData') !== '0';
+  jarvisPrefetch = localStorage.getItem('jarvisPrefetch') !== '0';
 }catch(e){}
 
 function ollamaHeaders(){
@@ -3577,6 +3664,7 @@ function toggleJarvisSettings(){
     document.getElementById('jarvisModelInput').value = ollamaModel;
     document.getElementById('jarvisSkipHeader').checked = ollamaSkipHeader;
     document.getElementById('jarvisUseData').checked = jarvisUseData;
+    document.getElementById('jarvisPrefetch').checked = jarvisPrefetch;
   }
 }
 function saveJarvisSettings(){
@@ -3586,11 +3674,13 @@ function saveJarvisSettings(){
   if(model) ollamaModel = model;
   ollamaSkipHeader = document.getElementById('jarvisSkipHeader').checked;
   jarvisUseData = document.getElementById('jarvisUseData').checked;
+  jarvisPrefetch = document.getElementById('jarvisPrefetch').checked;
   try{
     localStorage.setItem('ollamaUrl', ollamaUrl);
     localStorage.setItem('ollamaModel', ollamaModel);
     localStorage.setItem('ollamaSkipHeader', ollamaSkipHeader ? '1' : '0');
     localStorage.setItem('jarvisUseData', jarvisUseData ? '1' : '0');
+    localStorage.setItem('jarvisPrefetch', jarvisPrefetch ? '1' : '0');
   }catch(e){}
   document.getElementById('jarvisSettings').style.display = 'none';
   testJarvis();
@@ -3837,6 +3927,7 @@ function initApp(){
   };
 
   safe('data', hydrateData);
+  safe('saved plans', loadCachedPlans);
   safe('event caches', rebuildEventCaches);
   safe('AI history', seedConversations);
   safe('dashboard list', renderDash);
@@ -3848,6 +3939,9 @@ function initApp(){
   safe('inbox', renderInbox);
   safe('changelog', renderChangelog);
   safe('AI page', renderAiPage);
+
+  // Give the page a moment to paint, then get ahead on the next few assignments.
+  setTimeout(()=>{ prefetchPlans().catch(e=>console.warn('prefetch:', e)); }, 1500);
 }
 
 document.addEventListener('DOMContentLoaded', initApp);
