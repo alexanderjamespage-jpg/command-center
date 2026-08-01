@@ -474,6 +474,27 @@ body{
 .inbox-subject{font-size:12px;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .unread-dot{width:7px;height:7px;border-radius:50%;background:var(--blue);flex-shrink:0;align-self:center;}
 
+/* WORKSPACE SMART BOXES */
+.embed-wrap{position:relative;width:100%;padding-top:56.25%;border-radius:14px;overflow:hidden;
+  background:#000;border:1px solid var(--border);margin-bottom:10px;}
+.embed-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
+.doc-embed{width:100%;height:420px;border:1px solid var(--border);border-radius:14px;background:#fff;margin-top:10px;}
+.link-card{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:13px;
+  background:var(--panel2);border:1px solid var(--border);margin-bottom:9px;}
+.link-card .li{font-size:20px;flex-shrink:0;}
+.link-card .lb{flex:1;min-width:0;}
+.link-card .lt{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.link-card .lu{font-size:10.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.link-card .la{display:flex;gap:6px;flex-shrink:0;}
+.alert-item{display:flex;gap:10px;padding:10px 12px;border-radius:12px;margin-bottom:8px;
+  background:rgba(201,154,74,0.1);border:1px solid rgba(201,154,74,0.28);font-size:12.5px;line-height:1.5;}
+.alert-item.hot{background:rgba(217,119,111,0.1);border-color:rgba(217,119,111,0.3);}
+.alert-item .ai{flex-shrink:0;font-size:15px;}
+.alert-item b{color:var(--amber);}
+.alert-item.hot b{color:var(--red);}
+.ws-chat-log{display:flex;flex-direction:column;gap:10px;margin-bottom:12px;max-height:320px;overflow-y:auto;}
+.ws-chat-empty{font-size:12px;color:var(--dim);line-height:1.6;}
+
 /* CALENDAR SOURCE SLIDER — glass pill strip, like the camera mode picker */
 .cal-slider{display:flex;gap:5px;overflow-x:auto;scroll-snap-type:x proximity;padding:6px;
   border-radius:26px;background:rgba(20,22,32,0.55);border:1px solid rgba(255,255,255,0.12);
@@ -684,6 +705,7 @@ body{
         <div class="section-title" id="m-title" style="margin-bottom:4px;">Assignment</div>
         <div class="modal-meta" id="m-meta" style="margin-bottom:22px;">Due date · Points</div>
         <div id="m-workspace-cta" style="margin-bottom:14px;"></div>
+        <div class="card" id="m-plan-card" style="margin-bottom:14px;"></div>
         <div class="card" style="margin-bottom:14px;">
           <h4 style="font-size:11px;letter-spacing:0.5px;color:var(--dim);text-transform:uppercase;margin-bottom:8px;">Requirements</h4>
           <div class="modal-req" id="m-req"></div>
@@ -946,7 +968,7 @@ const classes = {
       {name:"Course Overview",due:"No due date set",cls:"soon",status:"upcoming",points:0,
         req:"Come be part of the Paradigm News Station! This class is only a semester, but scholars signed up are expected to take this class AND Video Production Capstone in the spring. This course is designed to provide students with the basic knowledge and skills related to the television broadcasting industry, including camera operation, audio systems, lighting systems, pre-production, studio operations, control room operations, visual effects and graphics, and copyright laws. Open only to 10th, 11th, and 12th graders. You MUST enroll in Video Production Capstone 2nd semester."},
       {name:"Camera Operation Basics",due:"Aug 1",cls:"hot",status:"upcoming",points:20,
-        req:"Practice framing, panning, and tilting shots with a studio camera. Submit a 2-minute practice clip demonstrating each technique."},
+        req:"Practice framing, panning, and tilting shots with a studio camera. Watch the technique walkthrough first: https://www.youtube.com/watch?v=aqz-KE-bpKQ . Submit a 2-minute practice clip demonstrating each technique. Bring your own SD card. Rubric here: https://docs.google.com/document/d/1aBcD_exampleDocId/edit"},
       {name:"Studio Safety Quiz",due:"Aug 4",cls:"hot",status:"upcoming",points:10,
         req:"Short quiz covering studio floor safety, cable management, and equipment handling."},
       {name:"Lighting Setup Exercise",due:"Aug 7",cls:"soon",status:"upcoming",points:20,
@@ -1204,14 +1226,30 @@ function handleFileUpload(file){
   const c = classes[classId];
   const a = c.upcoming[idx];
   const ext = (file.name.split('.').pop() || '').toLowerCase();
-  const icon = ext==='pdf' ? '📄' : (ext==='doc'||ext==='docx') ? '📝' : (ext==='png'||ext==='jpg'||ext==='jpeg') ? '🖼️' : '📎';
+  const icon = ext==='pdf' ? '📄'
+    : (ext==='doc'||ext==='docx') ? '📝'
+    : (ext==='png'||ext==='jpg'||ext==='jpeg') ? '🖼️'
+    : (ext==='mp4'||ext==='mov') ? '🎬'
+    : (ext==='wav'||ext==='mp3') ? '🎧' : '📎';
+
+  if(context === 'draft'){
+    // Drafts stack up, so you can see the work progress.
+    a.drafts = a.drafts || [];
+    a.drafts.unshift({ name:file.name, type:icon, when:new Date().toLocaleDateString() });
+    a.review = null;                 // the feedback is stale now
+    openWorkspace(classId, idx, 'upcoming');
+    return;
+  }
+
   a.turnIn = [{name:file.name, type:icon}];
   a.status = 'submitted';
   a.aiEstimate = null;
+  a.review = null;
   if(whatIfDefaults[classId]) delete whatIfDefaults[classId][idx];
   if(whatIfState[classId]) delete whatIfState[classId][idx];
+
   if(context==='page') openAssignment(classId,'upcoming',idx);
-  else if(context==='workspace') openWorkspace(classId, idx);
+  else if(context==='workspace') openWorkspace(classId, idx, 'upcoming');
   else openClass(classId);
 }
 
@@ -1507,11 +1545,25 @@ function openAssignment(classId, list, idx){
 
   const calActions = document.getElementById('m-cal-actions');
   calActions.innerHTML = list==='upcoming' ? `
-      <button class="cal-add-btn" onclick="addToGoogleCalendar('${a.name.replace(/'/g,"\\'")}', '${c.title}', '${a.due}')">📅 Add to Google Calendar</button>
-      <button class="cal-add-btn" onclick="downloadICS('${a.name.replace(/'/g,"\\'")}', '${c.title}', '${a.due}')">🍎 Download for Apple Calendar</button>` : '';
+      <button class="cal-add-btn" onclick="addToGoogleCalendar('${a.name.replace(/'/g,"\\'")}', '${c.title}', '${a.due}')">📅 Add to Calendar</button>` : '';
 
-  document.getElementById('m-workspace-cta').innerHTML = list==='upcoming'
-    ? `<button class="workspace-btn" onclick="openWorkspace('${classId}', ${idx})">🤖 Open AI Workspace — emails, calendar, time estimate &amp; how to complete it</button>` : '';
+  document.getElementById('m-workspace-cta').innerHTML = `
+    <button class="workspace-btn" onclick="openWorkspace('${classId}', ${idx}, '${list}')">🤖 Open AI Workspace — dates, media, feedback &amp; drafts</button>`;
+
+  // The plan writes itself here too, with the same two buttons.
+  const planCard = document.getElementById('m-plan-card');
+  planCard.innerHTML = `
+    <h4 style="font-size:11px;letter-spacing:0.5px;color:var(--dim);text-transform:uppercase;margin-bottom:10px;">✦ How to complete this</h4>
+    <div id="apAiOut" style="font-size:13px;line-height:1.65;">
+      ${a.plan
+        ? `<div style="white-space:pre-wrap;">${escapeHtml(a.plan)}</div>`
+        : '<div class="email-loading">Jarvis is reading the assignment…</div>'}
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;">
+      <button class="workspace-btn" style="margin:0;" onclick="workspaceAsk('${classId}', ${idx}, '${list}', false, 'apAiOut')">✦ Ask Jarvis for a real plan</button>
+      <button class="workspace-btn" style="margin:0;" onclick="workspaceAsk('${classId}', ${idx}, '${list}', true, 'apAiOut')">↻ Ask Jarvis again</button>
+    </div>`;
+  if(!a.plan) workspaceAsk(classId, idx, list, false, 'apAiOut');
 
   const studyCard = document.getElementById('m-studytime-card');
   if(list==='upcoming' && a.studyTime){
@@ -1590,32 +1642,277 @@ function buildAiSummary(c, a, related){
 }
 function renderWorkspacePicker(){
   currentWorkspace = null;
-  const rows = [];
+  const upcoming = [], past = [];
   Object.entries(classes).forEach(([id,c])=>{
-    c.upcoming.forEach((a,idx)=>{ if(a.points) rows.push({id,c,a,idx}); });
+    c.upcoming.forEach((a,idx)=>{ if(a.points) upcoming.push({id,c,a,idx}); });
+    c.past.forEach((p,idx)=>past.push({id,c,a:p,idx}));
   });
-  document.getElementById('ws-content').innerHTML = `
-    <div class="card">
-      <h4 style="font-size:11px;letter-spacing:0.5px;color:var(--dim);text-transform:uppercase;margin-bottom:12px;">Pick an assignment to open in the AI Workspace</h4>
-      <div class="ws-picker">
-        ${rows.map(r=>`
-          <div class="ws-pick-row" onclick="openWorkspace('${r.id}', ${r.idx})">
-            <div class="ws-pick-left">
-              <div class="ws-pick-icon" style="background:${r.c.color};">${r.c.icon}</div>
-              <div><div class="ws-pick-name">${r.a.name}</div><div class="ws-pick-class">${r.c.title}</div></div>
-            </div>
-            <span class="ws-pick-due ${r.a.cls}">${r.a.due}</span>
-          </div>`).join('')}
+
+  const rowHtml = (r, list) => `
+    <div class="ws-pick-row" onclick="openWorkspace('${r.id}', ${r.idx}, '${list}')">
+      <div class="ws-pick-left">
+        <div class="ws-pick-icon" style="background:${r.c.color};">${r.c.icon}</div>
+        <div>
+          <div class="ws-pick-name">${escapeHtml(r.a.name)}</div>
+          <div class="ws-pick-class">${escapeHtml(r.c.title)}</div>
+        </div>
       </div>
+      ${list === 'past'
+        ? `<span style="color:var(--green);font-weight:700;font-size:12.5px;">${escapeHtml(r.a.score)}</span>`
+        : `<span class="ws-pick-due ${r.a.cls}">${r.a.due}</span>`}
+    </div>`;
+
+  document.getElementById('ws-content').innerHTML = `
+    <div class="card" style="margin-bottom:14px;">
+      <h4 style="font-size:11px;letter-spacing:0.5px;color:var(--dim);text-transform:uppercase;margin-bottom:12px;">Upcoming — pick one to open</h4>
+      <div class="ws-picker">${upcoming.map(r=>rowHtml(r,'upcoming')).join('')}</div>
+    </div>
+
+    <div class="card">
+      <h4 style="font-size:11px;letter-spacing:0.5px;color:var(--dim);text-transform:uppercase;margin-bottom:12px;">Past assignments — open one to see the grade and what to do better</h4>
+      <div class="ws-picker">${past.length ? past.map(r=>rowHtml(r,'past')).join('') : '<div class="ws-empty">Nothing graded yet.</div>'}</div>
     </div>`;
 }
-function openWorkspace(classId, idx){
-  currentWorkspace = {classId, idx};
+
+/* ---------------------------------------------------------------
+   SMART BOXES — pull anything useful out of the assignment text
+   and the emails attached to it.
+   --------------------------------------------------------------- */
+function extractLinks(text){
+  const urls = String(text || '').match(/https?:\/\/[^\s<>")\]]+/g) || [];
+  const seen = new Set();
+  const out = [];
+  urls.forEach(raw=>{
+    const url = raw.replace(/[.,);]+$/, '');
+    if(seen.has(url)) return;
+    seen.add(url);
+    const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{6,})/);
+    if(yt) return out.push({ url, kind:'youtube', id:yt[1], icon:'▶️', label:'YouTube video' });
+    if(/docs\.google\.com\/document/.test(url))     return out.push({ url, kind:'doc',    icon:'📝', label:'Google Doc' });
+    if(/docs\.google\.com\/spreadsheets/.test(url)) return out.push({ url, kind:'sheet',  icon:'📊', label:'Google Sheet' });
+    if(/docs\.google\.com\/presentation/.test(url)) return out.push({ url, kind:'slides', icon:'📽️', label:'Google Slides' });
+    if(/docs\.google\.com\/forms|forms\.gle/.test(url)) return out.push({ url, kind:'form', icon:'📋', label:'Google Form' });
+    if(/drive\.google\.com/.test(url))              return out.push({ url, kind:'drive',  icon:'📁', label:'Drive file' });
+    if(/\.pdf($|\?)/i.test(url))                    return out.push({ url, kind:'pdf',    icon:'📄', label:'PDF' });
+    out.push({ url, kind:'link', icon:'🔗', label:'Link' });
+  });
+  return out;
+}
+
+/* Google share links become previewable by swapping /edit for /preview. */
+function googlePreviewUrl(url){
+  return url.replace(/\/(edit|view)(\?[^#]*)?(#.*)?$/, '/preview')
+            .replace(/\/d\/([\w-]+)$/, '/d/$1/preview');
+}
+
+const ALERT_RULES = [
+  { re:/\bfield trip\b/i,                        icon:'🚌', hot:true,  what:'Field trip' },
+  { re:/\bpermission slip\b|\bsigned form\b/i,   icon:'✍️', hot:true,  what:'Permission slip' },
+  { re:/\bno school\b|\bschool closed\b/i,       icon:'🏫', hot:false, what:'No school' },
+  { re:/\bmoved to\b|\brescheduled\b|\bpostponed\b|\bnew date\b/i, icon:'📅', hot:true, what:'Date changed' },
+  { re:/\bcancell?ed\b/i,                        icon:'🚫', hot:true,  what:'Cancelled' },
+  { re:/\bbring\b|\bmust have\b|\brequired\b|\bneed(ed)? to have\b/i, icon:'🎒', hot:false, what:'Bring something' },
+  { re:/\bdue\b|\bdeadline\b|\bturn(ed)? in by\b/i, icon:'⏰', hot:false, what:'Deadline' },
+  { re:/\btest\b|\bquiz\b|\bexam\b/i,            icon:'📝', hot:false, what:'Graded check' },
+  { re:/\$\s?\d|\bfee\b|\bcost\b/i,              icon:'💵', hot:false, what:'Costs money' },
+  { re:/\b\d{1,2}:\d{2}\s?(am|pm)?\b|\b\d{1,2}\s?(am|pm)\b/i, icon:'🕒', hot:false, what:'Specific time' }
+];
+
+function findAlerts(a, c, related){
+  const chunks = [];
+  if(a.req) chunks.push({ src:'the assignment', text:a.req });
+  related.forEach(m=>{
+    chunks.push({ src:m.s, text:(m.subj || '') + '. ' + (m.snippet || '') });
+  });
+
+  const found = [];
+  const seen = new Set();
+  chunks.forEach(chunk=>{
+    chunk.text.split(/(?<=[.!?])\s+|\n+/).forEach(sentence=>{
+      const s = sentence.trim();
+      if(s.length < 8 || s.length > 220) return;
+      ALERT_RULES.forEach(rule=>{
+        if(!rule.re.test(s)) return;
+        const key = rule.what + '|' + s.slice(0,40);
+        if(seen.has(key)) return;
+        seen.add(key);
+        found.push({ icon:rule.icon, hot:rule.hot, what:rule.what, text:s, src:chunk.src });
+      });
+    });
+  });
+  // Deadlines are the least surprising, so let the unusual stuff float up.
+  found.sort((x,y)=>(y.hot?1:0)-(x.hot?1:0));
+  return found.slice(0, 6);
+}
+
+/* ---------------------------------------------------------------
+   AI WORKSPACE
+   --------------------------------------------------------------- */
+let wsChats = {};   // "classId:list:idx" -> [{r, t}]
+function wsKey(classId, idx, list){ return classId + ':' + (list||'upcoming') + ':' + idx; }
+function wsItem(classId, idx, list){ return classes[classId][list || 'upcoming'][idx]; }
+
+function toggleWsForm(id){
+  const el = document.getElementById(id);
+  if(el) el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+
+/* ---- manual additions ---- */
+function addWsEvent(classId, idx, list){
+  const a = wsItem(classId, idx, list);
+  const date = document.getElementById('wsEvDate').value.trim();
+  const title = document.getElementById('wsEvTitle').value.trim();
+  const note = document.getElementById('wsEvNote').value.trim();
+  if(!date || !title){ alert('A date and a title are needed.'); return; }
+  a.events = a.events || [];
+  a.events.push({ date, title, note });
+  rebuildEventCaches();
+  openWorkspace(classId, idx, list);
+}
+function removeWsEvent(classId, idx, list, i){
+  const a = wsItem(classId, idx, list);
+  a.events.splice(i, 1);
+  rebuildEventCaches();
+  openWorkspace(classId, idx, list);
+}
+function addWsLink(classId, idx, list){
+  const a = wsItem(classId, idx, list);
+  const url = document.getElementById('wsLinkUrl').value.trim();
+  const label = document.getElementById('wsLinkLabel').value.trim();
+  if(!url){ alert('Paste a link first.'); return; }
+  a.links = a.links || [];
+  a.links.push({ url, label });
+  openWorkspace(classId, idx, list);
+}
+function removeWsLink(classId, idx, list, i){
+  const a = wsItem(classId, idx, list);
+  a.links.splice(i, 1);
+  openWorkspace(classId, idx, list);
+}
+function linkWsEmail(classId, idx, list){
+  const a = wsItem(classId, idx, list);
+  const sel = document.getElementById('wsEmailPick');
+  if(!sel || sel.value === '') return;
+  a.emailIds = a.emailIds || [];
+  const n = parseInt(sel.value, 10);
+  if(a.emailIds.indexOf(n) === -1) a.emailIds.push(n);
+  openWorkspace(classId, idx, list);
+}
+function unlinkWsEmail(classId, idx, list, n){
+  const a = wsItem(classId, idx, list);
+  a.emailIds = (a.emailIds || []).filter(x=>x !== n);
+  openWorkspace(classId, idx, list);
+}
+
+/* ---- Jarvis: grade estimate + what to improve ---- */
+async function wsGradeReview(classId, idx, list){
   const c = classes[classId];
-  const a = c.upcoming[idx];
-  const related = findRelatedEmails(classId);
-  const summary = buildAiSummary(c, a, related);
-  const pastRef = c.past.slice(-3);
+  const a = wsItem(classId, idx, list);
+  const box = document.getElementById('wsReviewOut');
+  const btn = document.getElementById('wsReviewBtn');
+  if(btn){ btn.disabled = true; btn.textContent = '✦ Reading your work…'; }
+  if(box) box.innerHTML = '<div class="email-loading">Jarvis is comparing what you turned in against the requirements…</div>';
+
+  const submitted = a.turnIn && a.turnIn.length ? a.turnIn[0].name : null;
+  const drafts = (a.drafts || []).map(d=>d.name).join(', ');
+  const graded = list === 'past';
+
+  const focus =
+    `ASSIGNMENT: ${a.name} (${c.title}, teacher ${c.teacher})\n` +
+    (graded ? `Final score: ${a.score}\n` : `Due ${a.due}, worth ${a.points} points\n`) +
+    `Requirements: ${a.req || '(none recorded)'}\n` +
+    `Final file turned in: ${submitted || 'nothing yet'}\n` +
+    `Drafts uploaded: ${drafts || 'none'}\n` +
+    `My track record in this class: ${c.past.map(p=>p.name + ' ' + p.score).join('; ') || 'none yet'}\n` +
+    `NOTE: you can see file names, not file contents. Don't pretend to have read the file — reason from the requirements, the file name and type, and the student's history.`;
+
+  const ask = graded
+    ? `I got ${a.score} on this. Write two short sections: "What that grade probably reflects" and "If I redo this, do these things differently" with 3–4 concrete bullet points.`
+    : `Write two short sections: "Likely grade" with a percentage and one sentence of reasoning, and "To score higher, fix these" with 3–4 concrete bullet points tied to the requirements.`;
+
+  try{
+    const out = await jarvisChat([
+      { role:'system', content: jarvisSystemPrompt(focus) },
+      { role:'user', content: ask }
+    ], { temperature:0.4 });
+    a.review = out;
+    if(box) box.innerHTML = `<div style="white-space:pre-wrap;">${escapeHtml(out)}</div>`;
+  }catch(e){
+    if(box) box.innerHTML = `<div class="ws-empty">Jarvis isn't reachable — ${escapeHtml(e.message)}</div>`;
+  }
+  if(btn){ btn.disabled = false; btn.textContent = a.review ? '✦ Review again' : '✦ Get estimate & feedback'; }
+}
+
+/* ---- the plan ---- */
+async function workspaceAsk(classId, idx, list, redo, targetId){
+  const c = classes[classId];
+  const a = wsItem(classId, idx, list);
+  const box = document.getElementById(targetId || 'wsAiOut');
+  if(!box) return;
+  if(redo) a.plan = null;
+  box.innerHTML = '<div class="email-loading">Jarvis is reading the assignment and your past work in this class…</div>';
+
+  const related = wsEmails(classId, a);
+  const focus =
+    'FOCUS ASSIGNMENT (answer about this one):\n' +
+    `Class: ${c.title} (teacher ${c.teacher})\n` +
+    `Name: ${a.name}\n` +
+    (list === 'past' ? `Already graded: ${a.score}\n` : `Due: ${a.due} — worth ${a.points} points\n`) +
+    `Full requirements: ${a.req}\n` +
+    `Turned in so far: ${a.turnIn && a.turnIn.length ? a.turnIn[0].name : 'nothing yet'}\n` +
+    `My graded work in this class: ${c.past.map(p=>p.name + ' ' + p.score).join('; ') || 'none yet'}\n` +
+    `Related emails: ${related.length ? related.map(m=>m.s + ' — ' + m.subj).join(' | ') : 'none'}`;
+
+  try{
+    const out = await jarvisChat([
+      { role:'system', content: jarvisSystemPrompt(focus) },
+      { role:'user', content:
+          `Walk me through finishing "${a.name}" properly. Number the main stages, and under each one give the specific sub-steps, what I need in front of me, roughly how long it takes, and how I know that stage is done. ` +
+          `Finish with a short checklist to run against the requirements before turning it in. Be concrete about this assignment, not generic study advice.` }
+    ], { temperature:0.5 });
+    a.plan = out;
+    box.innerHTML = `<div style="white-space:pre-wrap;">${escapeHtml(out)}</div>`
+      + (a.studyTime ? `<div class="ws-time-pill">⏱ ${a.studyTime}</div>` : '');
+  }catch(e){
+    box.innerHTML = `<div class="ws-empty">Jarvis isn't reachable — ${escapeHtml(e.message)}</div>
+      <ol style="margin:10px 0 0 18px;">${buildAiSummary(c, a, related).steps.map(s=>`<li>${s}</li>`).join('')}</ol>`;
+  }
+}
+
+/* Emails matched to a class, plus any you've pinned to this assignment. */
+function wsEmails(classId, a){
+  const auto = findRelatedEmails(classId);
+  const pinned = (a.emailIds || []).map(n=>inboxMsgs[n]).filter(Boolean);
+  const out = auto.slice();
+  pinned.forEach(m=>{ if(out.indexOf(m) === -1) out.push(m); });
+  return out;
+}
+
+function openWorkspace(classId, idx, list){
+  list = list || 'upcoming';
+  currentWorkspace = {classId, idx, list};
+  const c = classes[classId];
+  const a = wsItem(classId, idx, list);
+  const graded = list === 'past';
+  const related = wsEmails(classId, a);
+  const pastRef = c.past.map((p,i)=>({p, i}));
+  const key = wsKey(classId, idx, list);
+
+  const links = extractLinks(a.req + ' ' + related.map(m=>(m.snippet||'') + ' ' + (m.subj||'')).join(' '))
+    .concat((a.links || []).map(l=>Object.assign({}, extractLinks(l.url)[0] || {url:l.url, kind:'link', icon:'🔗', label:'Link'}, l.label ? {label:l.label} : {}, {manual:true})));
+  const alerts = findAlerts(a, c, related);
+
+  /* --- calendar rows: the due date plus anything you've added --- */
+  const calRows = [];
+  if(!graded && a.due && parseDue(a.due))
+    calRows.push({ date:a.due, title:'Due — ' + a.name, note:`${a.points} points · ${c.title}`, fixed:true });
+  (a.events || []).forEach((e,i)=>calRows.push({ date:e.date, title:e.title, note:e.note, i }));
+
+  const gradeLine = graded
+    ? `<div class="ws-cal-badge" style="background:rgba(90,168,127,0.16);color:var(--green);">${a.score}</div>`
+    : a.aiEstimate
+      ? `<div class="ws-cal-badge" style="background:rgba(139,110,245,0.16);color:#b89bf5;">Est. ${a.aiEstimate.pct} (${a.aiEstimate.letter})</div>`
+      : `<div class="ws-cal-badge" style="background:var(--panel2);color:var(--dim);">Not graded yet</div>`;
 
   document.getElementById('ws-content').innerHTML = `
     <div class="ws-header" style="background:${c.color};">
@@ -1625,85 +1922,244 @@ function openWorkspace(classId, idx){
       </div>
       <button class="ws-swap-btn" onclick="renderWorkspacePicker()">Switch assignment</button>
     </div>
+
+    <!-- OVERVIEW -->
+    <div class="ws-card span2" style="margin-bottom:14px;">
+      <h4>📊 How this one went</h4>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+        ${gradeLine}
+        <span style="font-size:12.5px;color:var(--dim);">
+          ${graded ? 'Graded work — ask Jarvis what to do differently if you get another shot at it.'
+                   : (a.turnIn && a.turnIn.length ? 'Turned in, waiting on a grade.' : 'Nothing turned in yet.')}
+        </span>
+        <button class="get-est-btn" id="wsReviewBtn" style="margin:0 0 0 auto;" onclick="wsGradeReview('${classId}', ${idx}, '${list}')">
+          ${a.review ? '✦ Review again' : '✦ Get estimate & feedback'}
+        </button>
+      </div>
+      <div id="wsReviewOut">${a.review
+        ? `<div style="white-space:pre-wrap;font-size:13px;line-height:1.65;">${escapeHtml(a.review)}</div>`
+        : `<div class="ws-empty">Jarvis can estimate the grade and list what to fix, based on the requirements, what you turned in, and how you've scored in ${escapeHtml(c.title)} before.</div>`}</div>
+    </div>
+
+    <!-- PLAN -->
     <div class="ws-summary">
       <h4>✦ How to complete this</h4>
       <div class="ws-summary-body" id="wsAiOut">
-        <ol>${summary.steps.map(s=>`<li>${s}</li>`).join('')}</ol>
-        ${a.studyTime ? `<div class="ws-time-pill">⏱ Estimated time: ${a.studyTime}</div>` : ''}
+        ${a.plan
+          ? `<div style="white-space:pre-wrap;">${escapeHtml(a.plan)}</div>${a.studyTime ? `<div class="ws-time-pill">⏱ ${a.studyTime}</div>` : ''}`
+          : '<div class="email-loading">Jarvis is reading the assignment…</div>'}
       </div>
-      <button class="workspace-btn" id="wsAiBtn" style="margin-top:14px;" onclick="workspaceAsk('${classId}', ${idx})">✦ Ask Jarvis for a real plan</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;">
+        <button class="workspace-btn" style="margin:0;" onclick="workspaceAsk('${classId}', ${idx}, '${list}')">✦ Ask Jarvis for a real plan</button>
+        <button class="workspace-btn" style="margin:0;" onclick="workspaceAsk('${classId}', ${idx}, '${list}', true)">↻ Ask Jarvis again</button>
+      </div>
     </div>
+
+    ${alerts.length ? `
+    <div class="ws-card span2" style="margin-bottom:14px;">
+      <h4>⚠️ Worth knowing</h4>
+      ${alerts.map(al=>`
+        <div class="alert-item ${al.hot?'hot':''}">
+          <span class="ai">${al.icon}</span>
+          <div><b>${al.what}</b> — ${escapeHtml(al.text)}<br>
+            <span style="color:var(--dim);font-size:11px;">from ${escapeHtml(al.src)}</span></div>
+        </div>`).join('')}
+    </div>` : ''}
+
     <div class="ws-grid">
       <div class="ws-card">
         <h4>📋 Assignment</h4>
         <div style="font-size:13px;line-height:1.6;">${a.req || 'No additional requirements listed.'}</div>
       </div>
+
+      <!-- CALENDAR, styled like the email list -->
       <div class="ws-card">
-        <h4>📅 Calendar</h4>
-        <div class="ws-cal-row"><span class="ws-cal-badge">${a.due}</span><span style="color:var(--dim);font-size:12.5px;">${a.points} pts</span></div>
-        <div class="cal-add-actions">
-          <button class="cal-add-btn" onclick="addToGoogleCalendar('${a.name.replace(/'/g,"\\'")}', '${c.title}', '${a.due}')">📅 Add to Google Calendar</button>
-          <button class="cal-add-btn" onclick="downloadICS('${a.name.replace(/'/g,"\\'")}', '${c.title}', '${a.due}')">🍎 Download for Apple Calendar</button>
+        <h4>📅 Dates</h4>
+        ${calRows.length ? calRows.map(r=>`
+          <div class="ws-email">
+            <div class="we-top">
+              <span class="we-sender">${escapeHtml(r.title)}</span>
+              <span class="we-date">${escapeHtml(r.date)}</span>
+            </div>
+            <div class="we-subj">${escapeHtml(r.note || '—')}${r.fixed ? '' : ` · <span class="view-link" onclick="removeWsEvent('${classId}', ${idx}, '${list}', ${r.i})">remove</span>`}</div>
+          </div>`).join('') : '<div class="ws-empty">No dates on this one yet.</div>'}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+          ${graded ? '' : `<button class="cal-add-btn" onclick="addToGoogleCalendar('${a.name.replace(/'/g,"\\'")}', '${c.title}', '${a.due}')">📅 Add to Calendar</button>`}
+          <button class="cal-add-btn" onclick="toggleWsForm('wsEvForm')">＋ Add a date</button>
+        </div>
+        <div id="wsEvForm" style="display:none;margin-top:12px;">
+          <input class="ai-input" id="wsEvDate" style="width:100%;margin-bottom:8px;" placeholder="Aug 12 or 2026-08-12">
+          <input class="ai-input" id="wsEvTitle" style="width:100%;margin-bottom:8px;" placeholder="Studio session, rough cut due…">
+          <input class="ai-input" id="wsEvNote" style="width:100%;margin-bottom:8px;" placeholder="Short note (optional)">
+          <button class="btn-primary" onclick="addWsEvent('${classId}', ${idx}, '${list}')">Add to calendar</button>
         </div>
       </div>
-      <div class="ws-card">
-        <h4>📥 Related Emails</h4>
-        ${related.length ? related.map(m=>`
-          <div class="ws-email">
-            <div class="we-top"><span class="we-sender">${m.a} ${m.s}</span><span class="we-date">${m.date}</span></div>
-            <div class="we-subj">${m.subj}</div>
-          </div>`).join('') : `<div class="ws-empty">No related messages found in your inbox for this class right now.</div>`}
-      </div>
-      <div class="ws-card">
-        <h4>📚 Reference — your track record in ${c.title}</h4>
-        ${pastRef.length ? pastRef.map(p=>`<div class="ws-ref-row"><span>${p.name}</span><span style="color:var(--green);font-weight:700;">${p.score}</span></div>`).join('') : `<div class="ws-empty">No graded work yet in this class.</div>`}
-      </div>
+
+      <!-- MEDIA -->
       <div class="ws-card span2">
-        <h4>⬆ Turn-In Folder</h4>
-        ${a.turnIn && a.turnIn.length ? a.turnIn.map(f=>`<div class="ws-ref-row"><span>${f.type} ${f.name}</span><span style="color:var(--green);">Submitted</span></div>`).join('') : `<div class="ws-empty" style="margin-bottom:10px;">Nothing turned in yet.</div>`}
-        <button class="upload-btn" onclick="triggerUpload('${classId}', ${idx}, 'workspace')">⬆ ${a.turnIn && a.turnIn.length ? 'Replace File' : 'Upload File'}</button>
-        <button class="cal-add-btn" onclick="openAssignment('${classId}','upcoming',${idx})">Open full assignment page →</button>
+        <h4>🎬 Attached media &amp; links</h4>
+        ${links.length ? links.map((l,i)=>{
+          if(l.kind === 'youtube')
+            return `<div class="embed-wrap"><iframe src="https://www.youtube-nocookie.com/embed/${l.id}" title="${escapeHtml(l.label)}" allowfullscreen loading="lazy"></iframe></div>`;
+          const previewable = ['doc','sheet','slides','pdf','drive'].indexOf(l.kind) !== -1;
+          return `
+            <div class="link-card">
+              <span class="li">${l.icon}</span>
+              <div class="lb">
+                <div class="lt">${escapeHtml(l.label)}</div>
+                <div class="lu">${escapeHtml(l.url)}</div>
+              </div>
+              <div class="la">
+                ${previewable ? `<button class="cal-add-btn" onclick="toggleDocPreview('${i}', '${escapeHtml(googlePreviewUrl(l.url))}')">Preview</button>` : ''}
+                <button class="cal-add-btn" onclick="window.open('${escapeHtml(l.url)}','_blank')">Open ↗</button>
+              </div>
+            </div>
+            <div id="doc-preview-${i}"></div>`;
+        }).join('') : '<div class="ws-empty">Nothing attached. Links in the assignment text or its emails show up here automatically.</div>'}
+        <button class="cal-add-btn" style="margin-top:12px;" onclick="toggleWsForm('wsLinkForm')">＋ Add a link</button>
+        <div id="wsLinkForm" style="display:none;margin-top:12px;">
+          <input class="ai-input" id="wsLinkUrl" style="width:100%;margin-bottom:8px;" placeholder="https://…  (YouTube, Google Doc, anything)">
+          <input class="ai-input" id="wsLinkLabel" style="width:100%;margin-bottom:8px;" placeholder="What is it? (optional)">
+          <button class="btn-primary" onclick="addWsLink('${classId}', ${idx}, '${list}')">Attach link</button>
+        </div>
+      </div>
+
+      <!-- EMAILS -->
+      <div class="ws-card">
+        <h4>📥 Related emails</h4>
+        ${related.length ? related.map(m=>{
+          const n = inboxMsgs.indexOf(m);
+          const pinned = (a.emailIds || []).indexOf(n) !== -1;
+          return `
+          <div class="ws-email">
+            <div class="we-top"><span class="we-sender">${m.a} ${escapeHtml(m.s)}</span><span class="we-date">${m.date}</span></div>
+            <div class="we-subj">${escapeHtml(m.subj)}${pinned ? ` · <span class="view-link" onclick="unlinkWsEmail('${classId}', ${idx}, '${list}', ${n})">unpin</span>` : ''}</div>
+          </div>`; }).join('') : '<div class="ws-empty">Nothing in your inbox about this class right now.</div>'}
+        <button class="cal-add-btn" style="margin-top:12px;" onclick="toggleWsForm('wsEmailForm')">＋ Pin an email</button>
+        <div id="wsEmailForm" style="display:none;margin-top:12px;">
+          <select class="ai-input" id="wsEmailPick" style="width:100%;margin-bottom:8px;">
+            <option value="">Choose a message…</option>
+            ${inboxMsgs.map((m,n)=>`<option value="${n}">${escapeHtml(m.s)} — ${escapeHtml(truncate(m.subj, 46))}</option>`).join('')}
+          </select>
+          <button class="btn-primary" onclick="linkWsEmail('${classId}', ${idx}, '${list}')">Pin to this assignment</button>
+        </div>
+      </div>
+
+      <div class="ws-card">
+        <h4>📚 Your track record in ${c.title}</h4>
+        ${pastRef.length ? pastRef.slice(-3).map(r=>`<div class="ws-ref-row"><span>${r.p.name}</span><span style="color:var(--green);font-weight:700;">${r.p.score}</span></div>`).join('') : '<div class="ws-empty">No graded work yet.</div>'}
+      </div>
+
+      <!-- TURN IN -->
+      <div class="ws-card span2">
+        <h4>⬆ Turn-in folder</h4>
+        ${a.turnIn && a.turnIn.length ? a.turnIn.map(f=>`<div class="ws-ref-row"><span>${f.type} ${escapeHtml(f.name)}</span><span style="color:var(--green);">Final</span></div>`).join('') : '<div class="ws-empty" style="margin-bottom:8px;">No final file yet.</div>'}
+        ${(a.drafts || []).map((d,i)=>`<div class="ws-ref-row"><span>${d.type} ${escapeHtml(d.name)}</span><span style="color:var(--amber);">Draft · ${escapeHtml(d.when)}</span></div>`).join('')}
+        <div style="margin-top:10px;">
+          <button class="upload-btn" onclick="triggerUpload('${classId}', ${idx}, 'workspace')">⬆ ${a.turnIn && a.turnIn.length ? 'Replace final' : 'Upload final'}</button>
+          <button class="upload-btn" onclick="triggerUpload('${classId}', ${idx}, 'draft')">📝 Upload draft</button>
+          <button class="cal-add-btn" onclick="openAssignment('${classId}','${list}',${idx})">Open full assignment page →</button>
+        </div>
+        <div class="ws-empty" style="margin-top:10px;">Drafts get the same review as the final — upload one and hit “Get estimate &amp; feedback” above to see what to fix before it counts.</div>
+      </div>
+
+      <!-- PAST ASSIGNMENTS -->
+      <div class="ws-card span2">
+        <h4>🗂 Past assignments in ${c.title}</h4>
+        ${c.past.length ? c.past.map((p,i)=>`
+          <div class="ws-pick-row" style="margin-bottom:8px;" onclick="openWorkspace('${classId}', ${i}, 'past')">
+            <div class="ws-pick-left">
+              <div class="ws-pick-icon" style="background:${c.color};">${c.icon}</div>
+              <div><div class="ws-pick-name">${escapeHtml(p.name)}</div><div class="ws-pick-class">Graded</div></div>
+            </div>
+            <span style="color:var(--green);font-weight:700;font-size:12.5px;">${escapeHtml(p.score)}</span>
+          </div>`).join('') : '<div class="ws-empty">Nothing graded yet in this class.</div>'}
+      </div>
+
+      <!-- CHAT -->
+      <div class="ws-card span2">
+        <h4>✦ Ask Jarvis about this assignment</h4>
+        <div class="ws-chat-log" id="wsChatLog"></div>
+        <div class="chip-row">
+          <span class="chip" onclick="wsAsk('${classId}', ${idx}, '${list}', 'What am I most likely to lose points on?')">Where do I lose points?</span>
+          <span class="chip" onclick="wsAsk('${classId}', ${idx}, '${list}', 'Explain this assignment in simpler terms.')">Explain it simply</span>
+          <span class="chip" onclick="wsAsk('${classId}', ${idx}, '${list}', 'What should I do first, right now?')">What do I do first?</span>
+          <span class="chip" onclick="wsAsk('${classId}', ${idx}, '${list}', 'How long will each part take me?')">Time breakdown</span>
+        </div>
+        <div class="ai-input-row">
+          <input class="ai-input" id="wsChatInput" placeholder="Ask anything about this assignment…"
+            onkeydown="if(event.key==='Enter') wsAsk('${classId}', ${idx}, '${list}')">
+          <button class="ai-send" onclick="wsAsk('${classId}', ${idx}, '${list}')">➤</button>
+        </div>
       </div>
     </div>`;
 
   go('workspace');
   document.getElementById('topTitle').textContent = 'AI Workspace — ' + a.name;
+  renderWsChat(key);
+  if(!a.plan) workspaceAsk(classId, idx, list);
 }
 
-/* Hands the assignment to Jarvis and replaces the checklist with its answer. */
-async function workspaceAsk(classId, idx){
-  const c = classes[classId];
-  const a = c.upcoming[idx];
-  const box = document.getElementById('wsAiOut');
-  const btn = document.getElementById('wsAiBtn');
-  btn.disabled = true;
-  btn.textContent = '✦ Thinking…';
-  box.innerHTML = '<div class="email-loading">Jarvis is reading the assignment and your past work in this class…</div>';
+function toggleDocPreview(i, url){
+  const box = document.getElementById('doc-preview-' + i);
+  if(!box) return;
+  if(box.innerHTML){ box.innerHTML = ''; return; }
+  box.innerHTML = `<iframe class="doc-embed" src="${url}" loading="lazy"></iframe>
+    <div class="ws-empty" style="margin:6px 0 12px;">If this stays blank, the file isn't shared with “anyone with the link” — use Open instead.</div>`;
+}
 
-  const related = findRelatedEmails(classId);
+/* ---- assignment-scoped Q&A ---- */
+function renderWsChat(key){
+  const log = document.getElementById('wsChatLog');
+  if(!log) return;
+  const msgs = wsChats[key] || [];
+  log.innerHTML = msgs.length ? msgs.map(m=>`
+    <div class="ai-msg ${m.r==='you'?'user':''}">
+      <div class="ai-avatar ${m.r==='you'?'you':'bot'}">${m.r==='you'?'You':'J'}</div>
+      <div><div class="ai-bubble">${escapeHtml(m.t)}</div></div>
+    </div>`).join('')
+    : '<div class="ws-chat-empty">Ask about anything here — the wording of the rubric, what to shoot first, whether your idea counts. Jarvis can see this assignment, your grades in the class, and the related emails.</div>';
+  log.scrollTop = log.scrollHeight;
+}
+
+async function wsAsk(classId, idx, list, preset){
+  list = list || 'upcoming';
+  const input = document.getElementById('wsChatInput');
+  const q = preset || (input ? input.value.trim() : '');
+  if(!q) return;
+  if(input && !preset) input.value = '';
+
+  const key = wsKey(classId, idx, list);
+  wsChats[key] = wsChats[key] || [];
+  wsChats[key].push({ r:'you', t:q });
+  wsChats[key].push({ r:'bot', t:'Thinking…' });
+  renderWsChat(key);
+
+  const c = classes[classId];
+  const a = wsItem(classId, idx, list);
+  const related = wsEmails(classId, a);
   const focus =
-    'FOCUS ASSIGNMENT (answer about this one):\n' +
+    'FOCUS ASSIGNMENT (the student is asking about this one):\n' +
     `Class: ${c.title} (teacher ${c.teacher})\n` +
-    `Name: ${a.name}\n` +
-    `Due: ${a.due} — worth ${a.points} points\n` +
+    `Name: ${a.name}` + (list === 'past' ? ` — graded ${a.score}\n` : ` — due ${a.due}, worth ${a.points} points\n`) +
     `Full requirements: ${a.req}\n` +
     `Turned in so far: ${a.turnIn && a.turnIn.length ? a.turnIn[0].name : 'nothing yet'}\n` +
-    `My graded work in this class: ${c.past.map(p=>p.name + ' ' + p.score).join('; ') || 'none yet'}\n` +
-    `Related emails: ${related.length ? related.map(m=>m.s + ' — ' + m.subj).join(' | ') : 'none'}`;
+    `Drafts: ${(a.drafts || []).map(d=>d.name).join(', ') || 'none'}\n` +
+    `Related emails: ${related.length ? related.map(m=>m.s + ' — ' + m.subj + ': ' + (m.snippet||'')).join(' | ') : 'none'}` +
+    (a.plan ? `\nThe plan you already gave: ${a.plan}` : '');
+
+  const history = wsChats[key].slice(0, -1)
+    .filter(m=>m.t !== 'Thinking…')
+    .slice(-6)
+    .map(m=>({ role: m.r==='you' ? 'user' : 'assistant', content: m.t }));
 
   try{
-    const out = await jarvisChat([
-      { role:'system', content: jarvisSystemPrompt(focus) },
-      { role:'user', content: `Give me a plan for finishing "${a.name}". Use at most 6 numbered steps. Say what to do first, roughly how long each step should take, and end with one thing people commonly lose points on for this kind of work.` }
-    ], { temperature:0.5 });
-    box.innerHTML = `<div style="white-space:pre-wrap;">${escapeHtml(out)}</div>`
-      + (a.studyTime ? `<div class="ws-time-pill">⏱ App estimate: ${a.studyTime}</div>` : '');
-    btn.textContent = '✦ Ask Jarvis again';
+    const out = await jarvisChat([{ role:'system', content: jarvisSystemPrompt(focus) }].concat(history), { temperature:0.5 });
+    wsChats[key][wsChats[key].length-1] = { r:'bot', t:out };
   }catch(e){
-    box.innerHTML = `<div class="ws-empty">${escapeHtml(e.message)}</div>`;
-    btn.textContent = '✦ Retry';
+    wsChats[key][wsChats[key].length-1] = { r:'bot', t: e.message };
   }
-  btn.disabled = false;
+  renderWsChat(key);
 }
 
 /* =====================================================================
@@ -1744,6 +2200,19 @@ function buildSchoolEvents(){
       (ev[k] = ev[k] || []).push({
         t:a.name, sub:c.title, color:(a.cls==='hot'?'red':a.cls==='soon'?'amber':'red'),
         allDay:true, kind:'assignment', classId:id, idx:i
+      });
+    });
+    // Anything you added by hand in the AI Workspace
+    c.upcoming.forEach((a,i)=>{
+      (a.events || []).forEach(e=>{
+        const d = parseDue(e.date) || (/^\d{4}-\d{2}-\d{2}$/.test(e.date)
+          ? new Date(+e.date.slice(0,4), +e.date.slice(5,7)-1, +e.date.slice(8,10)) : null);
+        if(!d) return;
+        const k = dk(d);
+        (ev[k] = ev[k] || []).push({
+          t:e.title, sub:(e.note || c.title), color:'amber',
+          allDay:true, kind:'assignment', classId:id, idx:i
+        });
       });
     });
   });
@@ -2389,28 +2858,21 @@ function submitAddCalendar(){
   loadFeed(id);
 }
 
-/* ---- ADD TO CALENDAR ---- */
-function isoFromDue(due){
-  const d = parseDue(due);
-  return d ? dk(d) : '';
-}
+/* ---- ADD TO CALENDAR ----
+   One click, no prompts: the due date is already known, so it just goes. */
 function addToGoogleCalendar(title, className, due){
-  const suggested = isoFromDue(due);
-  const dateInput = prompt(`Due date for "${title}" (${className})? Enter as YYYY-MM-DD:`, suggested);
-  if(!dateInput) return;
-  const d = dateInput.replace(/-/g,'');
-  window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${d}/${d}&details=${encodeURIComponent(className+' assignment')}`, '_blank');
-}
-function downloadICS(title, className, due){
-  const suggested = isoFromDue(due);
-  const dateInput = prompt(`Due date for "${title}" (${className})? Enter as YYYY-MM-DD:`, suggested);
-  if(!dateInput) return;
-  const d = dateInput.replace(/-/g,'');
-  const ics = `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:${title}\nDTSTART;VALUE=DATE:${d}\nDTEND;VALUE=DATE:${d}\nDESCRIPTION:${className} assignment\nEND:VEVENT\nEND:VCALENDAR`;
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(new Blob([ics], {type:'text/calendar'}));
-  link.download = title.replace(/[^a-z0-9]/gi,'_') + '.ics';
-  link.click();
+  const d = parseDue(due);
+  if(!d){
+    alert(`"${title}" doesn't have a due date yet, so there's nothing to add.`);
+    return;
+  }
+  const start = dk(d).replace(/-/g,'');
+  const end = dk(addDays(d,1)).replace(/-/g,'');   // all-day events end the next day
+  const url = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+    + '&text=' + encodeURIComponent(title)
+    + '&dates=' + start + '/' + end
+    + '&details=' + encodeURIComponent(className + ' — due ' + due);
+  window.open(url, '_blank');
 }
 
 /* =====================================================================
