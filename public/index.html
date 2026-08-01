@@ -1982,7 +1982,15 @@ async function registerGmailAccount(token){
     const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
       headers:{ Authorization:'Bearer '+token }
     });
-    if(!res.ok) throw new Error('Profile lookup failed: '+res.status);
+    if(!res.ok){
+      let detail = '';
+      try{
+        const err = await res.json();
+        detail = (err.error && (err.error.message || err.error.status)) || '';
+      }catch(e){}
+      console.error('Gmail profile lookup failed', res.status, detail);
+      throw new Error(res.status + (detail ? ' — ' + detail : ''));
+    }
     const profile = await res.json();
     const existing = gmailAccounts.find(a=>a.email===profile.emailAddress);
     if(existing){
