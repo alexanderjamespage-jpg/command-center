@@ -1944,6 +1944,9 @@ function escapeHtml(s){
    Reuses GOOGLE_CLIENT_ID from the calendar section above.
    ===================================================================== */
 const GMAIL_SCOPE = 'https://www.googleapis.com/auth/gmail.readonly';
+// Gmail uses its own OAuth client, separate from the calendar one above.
+// Client IDs are meant to be public in browser apps — never put a client secret here.
+const GMAIL_CLIENT_ID = '905036608712-g23evhggn4dom90pb810bkaiivea0frr.apps.googleusercontent.com';
 const GMAIL_MAX_RESULTS = 25;      // messages pulled per account
 const ACCT_COLORS = ['#5b84c4','#8579b8','#5aa87f','#c99a4a'];
 
@@ -1967,7 +1970,7 @@ function connectGmail(){
   }
   if(!gmailTokenClient){
     gmailTokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: GOOGLE_CLIENT_ID,
+      client_id: GMAIL_CLIENT_ID,
       scope: GMAIL_SCOPE,
       callback: (t)=>{ if(t && t.access_token) registerGmailAccount(t.access_token); }
     });
