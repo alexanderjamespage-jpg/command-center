@@ -473,6 +473,28 @@ body{
 .inbox-subject{font-size:12px;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .unread-dot{width:7px;height:7px;border-radius:50%;background:var(--blue);flex-shrink:0;align-self:center;}
 
+/* EMAIL READING VIEW */
+.acct-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.acct-chip{display:flex;align-items:center;gap:7px;background:var(--panel2);border:1px solid var(--border);
+  border-radius:20px;padding:5px 8px 5px 11px;font-size:11.5px;}
+.acct-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.acct-x{background:none;border:none;color:var(--dim);cursor:pointer;font-size:12px;padding:0 2px;}
+.acct-x:hover{color:var(--red);}
+.acct-err{color:var(--red);font-size:10.5px;}
+.email-tabs{display:flex;gap:8px;overflow-x:auto;margin-bottom:14px;padding-bottom:4px;}
+.email-tab{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--border);
+  border-radius:12px;padding:8px 10px 8px 12px;font-size:12px;cursor:pointer;flex-shrink:0;max-width:230px;}
+.email-tab:hover{border-color:var(--blue);}
+.email-tab.active{background:rgba(91,132,196,0.18);border-color:var(--blue);}
+.email-tab .tt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.email-tab .tx{background:none;border:none;color:var(--dim);cursor:pointer;font-size:12px;flex-shrink:0;}
+.email-tab .tx:hover{color:var(--red);}
+.email-head{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;align-items:flex-start;margin-bottom:14px;}
+.email-subject{font-size:18px;font-weight:700;line-height:1.35;}
+.email-meta{font-size:12px;color:var(--dim);margin-top:6px;line-height:1.6;}
+.email-body{font-size:13px;line-height:1.7;white-space:pre-wrap;word-break:break-word;}
+.email-loading{color:var(--dim);font-size:13px;padding:22px 0;}
+
 /* ============ RESPONSIVE ============ */
 @media (max-width:1024px){
   .class-grid{grid-template-columns:repeat(2,1fr);}
@@ -680,10 +702,7 @@ body{
       <div class="view" id="v-inbox">
         <div class="inbox-head">
           <div class="section-title" style="margin-bottom:0;">Inbox</div>
-          <div class="inbox-head-right">
-            <span class="inbox-status" id="gmailStatus">Showing sample mail</span>
-            <button class="cal-add-btn" id="gmail-connect-btn" onclick="connectGmail()">Connect Gmail</button>
-          </div>
+          <div class="inbox-head-right acct-bar" id="gmailAccounts"></div>
         </div>
         <div class="inbox-filter-bar" id="inboxFilterBar">
           <button class="inbox-filter-chip active" data-filter="all" onclick="setInboxFilter('all')">All</button>
@@ -692,7 +711,15 @@ body{
           <button class="inbox-filter-chip" data-filter="admin" onclick="setInboxFilter('admin')">School</button>
           <button class="inbox-filter-chip" data-filter="other" onclick="setInboxFilter('other')">Everything else</button>
         </div>
+        <div class="inbox-filter-bar" id="acctFilterBar"></div>
         <div class="card" id="inboxList" style="padding:8px 12px;"></div>
+      </div>
+
+      <!-- EMAIL — full page reader, several open at once as tabs -->
+      <div class="view" id="v-email">
+        <span class="back-btn" onclick="go('inbox')">‹ Back to Inbox</span>
+        <div class="email-tabs" id="emailTabs"></div>
+        <div id="emailBody"></div>
       </div>
 
       <!-- AI PAGE -->
@@ -947,7 +974,7 @@ const classes = {
 const SCHOOL_YEAR = 2026;
 
 const titles = {dashboard:"Dashboard",classdetail:"Class Detail",assignment:"Assignment",workspace:"AI Workspace",
-  calendar:"Calendar",attendance:"Attendance",attdetail:"Attendance Detail",inbox:"Inbox",ai:"AI",localai:"Jarvis",
+  calendar:"Calendar",attendance:"Attendance",attdetail:"Attendance Detail",inbox:"Inbox",email:"Email",ai:"AI",localai:"Jarvis",
   update:"Update",history:"History"};
 
 let currentClassId = null;
@@ -1872,8 +1899,8 @@ function deleteAttNote(i){
 }
 
 /* ===================== INBOX ===================== */
-/* Sample mail, shown until you click Connect Gmail. Real messages replace this. */
-let inboxMsgs = [
+/* Sample mail, shown until you connect Gmail. Real messages replace this. */
+const SAMPLE_INBOX = [
   {a:'📺',s:'Mrs. Smith',subj:'Studio time moved to Friday — bring your SD card',date:'2h ago',unread:true,type:'teacher'},
   {a:'🏫',s:'School Admin',subj:'No School — Aug 26, staff development day',date:'1d ago',unread:true,type:'admin'},
   {a:'📐',s:'Mr. Johnson',subj:'Unit 1 feedback posted, check your grade',date:'2d ago',unread:false,type:'teacher'},
@@ -1881,6 +1908,7 @@ let inboxMsgs = [
   {a:'🏛️',s:'Mr. Brown',subj:'Latin vocabulary packet now available',date:'4d ago',unread:false,type:'teacher'},
   {a:'🏫',s:'School Admin',subj:'Picture retake day scheduled for next month',date:'5d ago',unread:false,type:'admin'},
 ];
+let inboxMsgs = SAMPLE_INBOX.slice();
 let inboxFilter = 'all';
 function setInboxFilter(f){
   inboxFilter = f;
@@ -1889,15 +1917,16 @@ function setInboxFilter(f){
 }
 function renderInbox(){
   const filtered = inboxMsgs.filter(m=>{
+    if(acctFilter!=='all' && m.acctId !== acctFilter) return false;
     if(inboxFilter==='all') return true;
     if(inboxFilter==='unread') return m.unread;
     return m.type===inboxFilter;
   });
   document.getElementById('inboxList').innerHTML = filtered.map(m=>`
-    <div class="inbox-item ${m.unread?'unread':''}" ${m.id?`onclick="openGmailMessage('${m.id}')"`:''}>
+    <div class="inbox-item ${m.unread?'unread':''}" ${m.id?`onclick="openEmail('${m.acctId}','${m.id}')"`:''}>
       <div class="inbox-avatar">${m.a}</div>
       <div class="inbox-body">
-        <div class="inbox-top"><span class="inbox-sender">${escapeHtml(m.s)}</span><span class="inbox-date">${m.date}</span></div>
+        <div class="inbox-top"><span class="inbox-sender">${m.acctColor?`<span class="acct-dot" style="background:${m.acctColor};display:inline-block;margin-right:7px;"></span>`:''}${escapeHtml(m.s)}</span><span class="inbox-date">${m.date}</span></div>
         <div class="inbox-subject">${escapeHtml(m.subj)}</div>
         ${m.snippet ? `<div class="inbox-snippet">${escapeHtml(m.snippet)}</div>` : ''}
       </div>
@@ -1909,13 +1938,14 @@ function escapeHtml(s){
 }
 
 /* =====================================================================
-   GMAIL — pulls your real inbox through the Gmail API.
-   Reuses GOOGLE_CLIENT_ID from the calendar section, but asks for its own
-   token, so connecting the calendar never forces a Gmail permission prompt
-   (and vice versa).
+   GMAIL — real mail through the Gmail API, with support for more than
+   one account at a time. Each account gets its own access token; the
+   inbox merges them and colour-codes which account a message came from.
+   Reuses GOOGLE_CLIENT_ID from the calendar section above.
    ===================================================================== */
 const GMAIL_SCOPE = 'https://www.googleapis.com/auth/gmail.readonly';
-const GMAIL_MAX_RESULTS = 25;
+const GMAIL_MAX_RESULTS = 25;      // messages pulled per account
+const ACCT_COLORS = ['#5b84c4','#8579b8','#5aa87f','#c99a4a'];
 
 // Mail from these domains gets filed under "Teachers".
 // ⚠️ EDIT — put your school's email domain here, no @ sign.
@@ -1925,8 +1955,11 @@ const SCHOOL_EMAIL_DOMAINS = ['paradigmhighschool.org'];
 const ADMIN_SENDER_HINTS = ['noreply','no-reply','donotreply','infinitecampus','parentsquare','admin','office','district','registrar'];
 
 let gmailTokenClient = null;
-let gmailAccessToken = null;
+let gmailAccounts = [];   // [{id, email, token, color, error}]
+let acctFilter = 'all';   // 'all' or an account id
+let gmailLoading = false;
 
+/* ---- connecting accounts ---- */
 function connectGmail(){
   if(typeof google === 'undefined' || !google.accounts){
     alert("Google's sign-in script hasn't loaded yet — check your connection and try again in a moment.");
@@ -1936,19 +1969,55 @@ function connectGmail(){
     gmailTokenClient = google.accounts.oauth2.initTokenClient({
       client_id: GOOGLE_CLIENT_ID,
       scope: GMAIL_SCOPE,
-      callback: (t)=>{ if(t && t.access_token){ gmailAccessToken = t.access_token; fetchGmail(); } }
+      callback: (t)=>{ if(t && t.access_token) registerGmailAccount(t.access_token); }
     });
   }
-  if(gmailAccessToken) fetchGmail();
-  else gmailTokenClient.requestAccessToken();
+  // 'select_account' forces the account chooser every time, which is how you
+  // add a second inbox instead of silently reusing the first one.
+  gmailTokenClient.requestAccessToken({ prompt:'select_account' });
 }
 
+async function registerGmailAccount(token){
+  try{
+    const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
+      headers:{ Authorization:'Bearer '+token }
+    });
+    if(!res.ok) throw new Error('Profile lookup failed: '+res.status);
+    const profile = await res.json();
+    const existing = gmailAccounts.find(a=>a.email===profile.emailAddress);
+    if(existing){
+      existing.token = token;
+      existing.error = null;
+    } else {
+      gmailAccounts.push({
+        id: 'acct'+(gmailAccounts.length+1),
+        email: profile.emailAddress,
+        token,
+        color: ACCT_COLORS[gmailAccounts.length % ACCT_COLORS.length],
+        error: null
+      });
+    }
+    await fetchAllGmail();
+  }catch(e){
+    console.error(e);
+    alert("Couldn't finish connecting that account: " + e.message);
+  }
+}
+
+function disconnectGmail(id){
+  gmailAccounts = gmailAccounts.filter(a=>a.id!==id);
+  openEmails = openEmails.filter(e=>e.acctId!==id);
+  if(acctFilter===id) acctFilter = 'all';
+  if(gmailAccounts.length) fetchAllGmail();
+  else { inboxMsgs = SAMPLE_INBOX.slice(); renderGmailAccounts(); renderAcctFilter(); renderInbox(); updateUnreadBadge(); }
+}
+
+/* ---- header parsing ---- */
 function gmailHeader(msg, name){
   const list = (msg.payload && msg.payload.headers) || [];
   const h = list.find(x=>x.name.toLowerCase()===name.toLowerCase());
   return h ? h.value : '';
 }
-/* "Mrs. Smith <smith@school.org>" → {name:'Mrs. Smith', email:'smith@school.org'} */
 function parseSender(from){
   const m = String(from).match(/^\s*"?([^"<]*)"?\s*<?([^>]*)>?\s*$/);
   const email = ((m && m[2]) || from || '').trim();
@@ -1974,60 +2043,234 @@ function relativeDate(dateStr){
   return MONTH_ABBR[d.getMonth()]+' '+d.getDate();
 }
 
-async function fetchGmail(){
-  const btn = document.getElementById('gmail-connect-btn');
-  const status = document.getElementById('gmailStatus');
-  if(btn) btn.textContent = 'Loading…';
-  const headers = { Authorization: `Bearer ${gmailAccessToken}` };
+/* ---- fetching ---- */
+async function fetchGmailFor(acct){
+  const headers = { Authorization:'Bearer '+acct.token };
+  const listRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${GMAIL_MAX_RESULTS}&labelIds=INBOX`, {headers});
+  if(listRes.status === 401){
+    acct.token = null;
+    throw new Error('session expired');
+  }
+  if(!listRes.ok) throw new Error('API error '+listRes.status);
+  const list = await listRes.json();
+  const ids = list.messages || [];
+
+  // The list call returns IDs only, so each message needs its own metadata call.
+  const details = await Promise.all(ids.map(m=>
+    fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date`, {headers})
+      .then(r=>r.json())
+  ));
+
+  return details.map(msg=>{
+    const from = parseSender(gmailHeader(msg,'From'));
+    const type = classifySender(from.email);
+    return {
+      a: type==='admin' ? '🏫' : type==='teacher' ? '👩‍🏫' : '✉️',
+      s: from.name,
+      fromEmail: from.email,
+      subj: gmailHeader(msg,'Subject') || '(no subject)',
+      date: relativeDate(gmailHeader(msg,'Date')),
+      fullDate: gmailHeader(msg,'Date'),
+      unread: (msg.labelIds || []).includes('UNREAD'),
+      type,
+      snippet: msg.snippet || '',
+      id: msg.id,
+      acctId: acct.id,
+      acctEmail: acct.email,
+      acctColor: acct.color,
+      ts: parseInt(msg.internalDate || '0', 10)
+    };
+  });
+}
+
+async function fetchAllGmail(){
+  if(!gmailAccounts.length) return;
+  gmailLoading = true;
+  renderGmailAccounts();
+  const all = [];
+  for(const acct of gmailAccounts){
+    if(!acct.token){ acct.error = 'signed out'; continue; }
+    try{
+      all.push(...await fetchGmailFor(acct));
+      acct.error = null;
+    }catch(e){
+      console.error(acct.email, e);
+      acct.error = e.message;
+    }
+  }
+  all.sort((a,b)=>b.ts - a.ts);
+  inboxMsgs = all;
+  gmailLoading = false;
+  renderGmailAccounts();
+  renderAcctFilter();
+  renderInbox();
+  updateUnreadBadge();
+}
+
+/* ---- account bar + account filter ---- */
+function renderGmailAccounts(){
+  const el = document.getElementById('gmailAccounts');
+  if(!el) return;
+  const chips = gmailAccounts.map(a=>`
+    <span class="acct-chip">
+      <span class="acct-dot" style="background:${a.color};"></span>
+      <span>${escapeHtml(a.email)}</span>
+      ${a.error ? `<span class="acct-err">(${escapeHtml(a.error)})</span>` : ''}
+      <button class="acct-x" title="Disconnect" onclick="disconnectGmail('${a.id}')">✕</button>
+    </span>`).join('');
+  const addLabel = gmailAccounts.length ? '＋ Add account' : 'Connect Gmail';
+  el.innerHTML = chips
+    + (gmailLoading ? '<span class="inbox-status">Loading…</span>' : '')
+    + `<button class="cal-add-btn" onclick="connectGmail()">${addLabel}</button>`
+    + (gmailAccounts.length ? `<button class="cal-add-btn" onclick="fetchAllGmail()">↻ Refresh</button>` : '')
+    + (gmailAccounts.length ? '' : '<span class="inbox-status">Showing sample mail</span>');
+}
+function setAcctFilter(id){ acctFilter = id; renderAcctFilter(); renderInbox(); }
+function renderAcctFilter(){
+  const el = document.getElementById('acctFilterBar');
+  if(!el) return;
+  if(gmailAccounts.length < 2){ el.innerHTML = ''; return; }
+  el.innerHTML = `<button class="inbox-filter-chip ${acctFilter==='all'?'active':''}" onclick="setAcctFilter('all')">Both accounts</button>`
+    + gmailAccounts.map(a=>`
+      <button class="inbox-filter-chip ${acctFilter===a.id?'active':''}" onclick="setAcctFilter('${a.id}')">
+        <span class="acct-dot" style="background:${a.color};display:inline-block;margin-right:6px;"></span>${escapeHtml(a.email.split('@')[0])}
+      </button>`).join('');
+}
+
+/* ---- reading a message: several stay open as tabs ---- */
+let openEmails = [];      // [{key, acctId, id, subject, from, to, date, body, loading}]
+let activeEmailKey = null;
+
+function decodeB64Url(data){
+  const s = String(data).replace(/-/g,'+').replace(/_/g,'/');
+  try{ return decodeURIComponent(escape(atob(s))); }
+  catch(e){ try{ return atob(s); }catch(e2){ return ''; } }
+}
+function htmlToText(h){
+  return h
+    .replace(/<style[\s\S]*?<\/style>/gi,'')
+    .replace(/<script[\s\S]*?<\/script>/gi,'')
+    .replace(/<br\s*\/?>/gi,'\n')
+    .replace(/<\/(p|div|tr|h[1-6])>/gi,'\n')
+    .replace(/<[^>]+>/g,'')
+    .replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').replace(/&lt;/gi,'<')
+    .replace(/&gt;/gi,'>').replace(/&quot;/gi,'"').replace(/&#39;/gi,"'")
+    .replace(/\n{3,}/g,'\n\n').trim();
+}
+function extractBody(payload){
+  let plain = '', html = '';
+  (function walk(p){
+    if(!p) return;
+    if(p.mimeType==='text/plain' && p.body && p.body.data && !plain) plain = decodeB64Url(p.body.data);
+    if(p.mimeType==='text/html' && p.body && p.body.data && !html) html = decodeB64Url(p.body.data);
+    (p.parts || []).forEach(walk);
+  })(payload);
+  if(plain.trim()) return plain.trim();
+  if(html.trim()) return htmlToText(html);
+  return '(No plain text in this message. Open it in Gmail to see the full version.)';
+}
+
+async function openEmail(acctId, id){
+  const key = acctId + ':' + id;
+  activeEmailKey = key;
+  let tab = openEmails.find(e=>e.key===key);
+  if(!tab){
+    const msg = inboxMsgs.find(m=>m.id===id && m.acctId===acctId) || {};
+    tab = {key, acctId, id, subject: msg.subj || 'Loading…', from: msg.s || '', fromEmail: msg.fromEmail || '',
+           date: msg.fullDate || '', acctEmail: msg.acctEmail || '', acctColor: msg.acctColor || '#5b84c4',
+           body: '', to: '', loading: true};
+    openEmails.push(tab);
+  }
+  go('email');
+  renderEmailView();
+  if(!tab.loading) return;
+
+  const acct = gmailAccounts.find(a=>a.id===acctId);
+  if(!acct || !acct.token){
+    tab.loading = false;
+    tab.body = 'That account is signed out. Click Connect Gmail on the Inbox page to sign back in.';
+    renderEmailView();
+    return;
+  }
   try{
-    const listRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${GMAIL_MAX_RESULTS}&labelIds=INBOX`, {headers});
-    if(listRes.status === 401){
-      gmailAccessToken = null;
-      throw new Error('Your Gmail session expired. Click Connect Gmail again.');
-    }
-    if(!listRes.ok) throw new Error('Gmail API error: ' + listRes.status);
-    const list = await listRes.json();
-    const ids = list.messages || [];
-
-    // The list call only returns IDs, so each message needs its own metadata call.
-    const details = await Promise.all(ids.map(m=>
-      fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date`, {headers})
-        .then(r=>r.json())
-    ));
-
-    inboxMsgs = details.map(msg=>{
-      const from = parseSender(gmailHeader(msg,'From'));
-      const type = classifySender(from.email);
-      return {
-        a: type==='admin' ? '🏫' : type==='teacher' ? '👩‍🏫' : '✉️',
-        s: from.name,
-        subj: gmailHeader(msg,'Subject') || '(no subject)',
-        date: relativeDate(gmailHeader(msg,'Date')),
-        unread: (msg.labelIds || []).includes('UNREAD'),
-        type,
-        snippet: msg.snippet || '',
-        id: msg.id
-      };
+    const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=full`, {
+      headers:{ Authorization:'Bearer '+acct.token }
     });
-
-    if(btn) btn.textContent = 'Refresh';
-    if(status){
-      status.textContent = `${inboxMsgs.length} messages · connected`;
-      status.classList.add('on');
-    }
-    renderInbox();
-    updateUnreadBadge();
+    if(!res.ok) throw new Error('Gmail API error '+res.status);
+    const msg = await res.json();
+    tab.subject = gmailHeader(msg,'Subject') || '(no subject)';
+    const f = parseSender(gmailHeader(msg,'From'));
+    tab.from = f.name; tab.fromEmail = f.email;
+    tab.to = gmailHeader(msg,'To');
+    tab.date = gmailHeader(msg,'Date');
+    tab.body = extractBody(msg.payload);
   }catch(e){
     console.error(e);
-    if(btn) btn.textContent = 'Retry';
-    if(status){ status.textContent = 'Not connected'; status.classList.remove('on'); }
-    alert("Couldn't load Gmail: " + e.message);
+    tab.body = "Couldn't load this message: " + e.message;
   }
+  tab.loading = false;
+  renderEmailView();
 }
 
-function openGmailMessage(id){
-  if(id) window.open('https://mail.google.com/mail/u/0/#inbox/' + id, '_blank');
+function closeEmailTab(key, ev){
+  if(ev) ev.stopPropagation();
+  const i = openEmails.findIndex(e=>e.key===key);
+  if(i < 0) return;
+  openEmails.splice(i,1);
+  if(activeEmailKey === key){
+    const next = openEmails[i] || openEmails[i-1];
+    activeEmailKey = next ? next.key : null;
+  }
+  if(!openEmails.length){ go('inbox'); return; }
+  renderEmailView();
 }
+function selectEmailTab(key){ activeEmailKey = key; renderEmailView(); }
+
+function renderEmailView(){
+  const tabsEl = document.getElementById('emailTabs');
+  const bodyEl = document.getElementById('emailBody');
+  if(!tabsEl || !bodyEl) return;
+
+  tabsEl.innerHTML = openEmails.map(e=>`
+    <div class="email-tab ${e.key===activeEmailKey?'active':''}" onclick="selectEmailTab('${e.key}')">
+      <span class="acct-dot" style="background:${e.acctColor};"></span>
+      <span class="tt">${escapeHtml(e.subject)}</span>
+      <button class="tx" onclick="closeEmailTab('${e.key}', event)">✕</button>
+    </div>`).join('');
+
+  const e = openEmails.find(x=>x.key===activeEmailKey);
+  if(!e){ bodyEl.innerHTML = '<div class="placeholder">No message open.</div>'; return; }
+
+  bodyEl.innerHTML = `
+    <div class="card">
+      <div class="email-head">
+        <div style="min-width:0;">
+          <div class="email-subject">${escapeHtml(e.subject)}</div>
+          <div class="email-meta">
+            From ${escapeHtml(e.from)} &lt;${escapeHtml(e.fromEmail)}&gt;<br>
+            ${e.to ? 'To '+escapeHtml(e.to)+'<br>' : ''}
+            ${escapeHtml(e.date)}
+          </div>
+        </div>
+        <span class="acct-chip"><span class="acct-dot" style="background:${e.acctColor};"></span>${escapeHtml(e.acctEmail)}</span>
+      </div>
+      ${e.loading ? '<div class="email-loading">Loading message…</div>' : `<div class="email-body">${escapeHtml(e.body)}</div>`}
+      <div class="cal-add-actions">
+        <button class="cal-add-btn" onclick="openGmailMessage('${e.acctId}','${e.id}')">Open in Gmail ↗</button>
+        <button class="cal-add-btn" onclick="closeEmailTab('${e.key}')">Close tab</button>
+      </div>
+    </div>`;
+  document.getElementById('topTitle').textContent = e.subject;
+}
+
+function openGmailMessage(acctId, id){
+  const acct = gmailAccounts.find(a=>a.id===acctId);
+  const email = acct ? encodeURIComponent(acct.email) : '';
+  // authuser makes Gmail open the message under the right account when
+  // you're signed into more than one.
+  window.open(`https://mail.google.com/mail/?authuser=${email}#inbox/${id}`, '_blank');
+}
+
 function updateUnreadBadge(){
   const n = inboxMsgs.filter(m=>m.unread).length;
   const badge = document.querySelector('.bell .badge');
@@ -2189,12 +2432,15 @@ function go(view){
   if(navMatch) navMatch.classList.add('active');
   else if(view==='classdetail' || view==='assignment') document.querySelector('.nav-item[data-view="dashboard"]').classList.add('active');
   else if(view==='attdetail') document.querySelector('.nav-item[data-view="attendance"]').classList.add('active');
+  else if(view==='email') document.querySelector('.nav-item[data-view="inbox"]').classList.add('active');
   document.getElementById('topTitle').textContent = titles[view] || 'Command Center';
   document.querySelector('.content').scrollTop = 0;
   if(view==='dashboard'){ renderClassGrid(); renderDash(); }
   if(view==='workspace' && !currentWorkspace) renderWorkspacePicker();
   if(view==='calendar'){ rebuildEventCaches(); renderCalendar(); }
   if(view==='attendance') renderAttendance();
+  if(view==='inbox'){ renderGmailAccounts(); renderAcctFilter(); renderInbox(); }
+  if(view==='email') renderEmailView();
   if(view==='ai') renderAiPage();
 }
 
@@ -2207,6 +2453,8 @@ function initApp(){
   initLayerCheckboxes();
   renderCalendar();
   renderAttendance();
+  renderGmailAccounts();
+  renderAcctFilter();
   renderInbox();
   renderChangelog();
   renderAiPage();
