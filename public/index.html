@@ -562,7 +562,6 @@ body{
     <div class="nav-item" data-view="calendar"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg></span>Calendar</div>
     <div class="nav-item" data-view="attendance"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.5l2.4 2.4L15.8 9.5"/></svg></span>Attendance</div>
     <div class="nav-item" data-view="inbox"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6 8.5 7 8.5-7"/></svg></span>Inbox</div>
-    <div class="nav-item" data-view="history"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></span>History</div>
     <div class="nav-item" data-view="ai"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v3M12 17v3M4 12h3M17 12h3M6.5 6.5l2 2M15.5 15.5l2 2M17.5 6.5l-2 2M8.5 15.5l-2 2"/><circle cx="12" cy="12" r="2.3"/></svg></span>AI</div>
     <div class="nav-item" data-view="localai"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h.01M15 9h.01M9 15h6"/></svg></span>Jarvis</div>
     <div class="nav-item" data-view="update"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 13.66-5.66L20 8.5"/><path d="M20 4v4.5h-4.5"/><path d="M20 12a8 8 0 0 1-13.66 5.66L4 15.5"/><path d="M4 20v-4.5h4.5"/></svg></span>Update</div>
@@ -770,6 +769,7 @@ body{
           <div class="section-title" style="margin-bottom:0;">Jarvis (Local AI)</div>
           <div class="inbox-head-right acct-bar">
             <span class="inbox-status" id="jarvisStatus">Not checked yet</span>
+            <button class="cal-add-btn" onclick="clearJarvisChat()">Clear chat</button>
             <button class="cal-add-btn" onclick="testJarvis()">Test connection</button>
             <button class="cal-add-btn" onclick="toggleJarvisSettings()">⚙ Settings</button>
           </div>
@@ -781,6 +781,10 @@ body{
           <div style="font-size:11.5px;color:var(--dim);margin-bottom:6px;">Model — run <code>ollama list</code> on the Mac mini to see exact names</div>
           <input class="ai-input" id="jarvisModelInput" style="width:100%;margin-bottom:12px;" placeholder="llama3.1:8b" list="jarvisModelList">
           <datalist id="jarvisModelList"></datalist>
+          <label class="cal-layer-row" style="margin-bottom:8px;cursor:pointer;">
+            <input type="checkbox" id="jarvisUseData"> Let Jarvis see my school data
+          </label>
+          <div style="font-size:11px;color:var(--dim);margin:-4px 0 12px;line-height:1.5;">Sends your classes, grades, assignments, attendance and recent email subjects along with each question. It only ever goes to your own Mac mini.</div>
           <label class="cal-layer-row" style="margin-bottom:12px;cursor:pointer;">
             <input type="checkbox" id="jarvisSkipHeader"> Send ngrok skip-warning header
           </label>
@@ -810,8 +814,6 @@ body{
           </section>
         </div>
       </div>
-
-      <div class="view" id="v-history"><div class="placeholder">History — past attendance and activity log.</div></div>
 
       <!-- UPDATE -->
       <div class="view" id="v-update">
@@ -867,21 +869,21 @@ body{
    real values (teacher names, letter grades, past scores).
    ===================================================================== */
 const classes = {
-  tv:{title:"TV and Broadcasting 1",icon:"📺",color:"#3a5f9e",teacher:"⚠️ EDIT teacher name",grade:"⚠️",pct:"90%",gradeClass:"a",day:"A",
+  tv:{title:"TV and Broadcasting 1",icon:"📺",color:"#3a5f9e",teacher:"Mr. Whitaker",grade:"⚠️",pct:"90%",gradeClass:"a",day:"A",
     upcoming:[
       {name:"Course Overview",due:"No due date set",cls:"soon",status:"upcoming",points:0,
         req:"Come be part of the Paradigm News Station! This class is only a semester, but scholars signed up are expected to take this class AND Video Production Capstone in the spring. This course is designed to provide students with the basic knowledge and skills related to the television broadcasting industry, including camera operation, audio systems, lighting systems, pre-production, studio operations, control room operations, visual effects and graphics, and copyright laws. Open only to 10th, 11th, and 12th graders. You MUST enroll in Video Production Capstone 2nd semester."},
-      {name:"Camera Operation Basics",due:"Aug 1",cls:"hot",status:"upcoming",points:20,studyTime:"55 min",
+      {name:"Camera Operation Basics",due:"Aug 1",cls:"hot",status:"upcoming",points:20,
         req:"Practice framing, panning, and tilting shots with a studio camera. Submit a 2-minute practice clip demonstrating each technique."},
-      {name:"Studio Safety Quiz",due:"Aug 4",cls:"hot",status:"upcoming",points:10,studyTime:"30 min",
+      {name:"Studio Safety Quiz",due:"Aug 4",cls:"hot",status:"upcoming",points:10,
         req:"Short quiz covering studio floor safety, cable management, and equipment handling."},
-      {name:"Lighting Setup Exercise",due:"Aug 7",cls:"soon",status:"upcoming",points:20,studyTime:"55 min",
+      {name:"Lighting Setup Exercise",due:"Aug 7",cls:"soon",status:"upcoming",points:20,
         req:"Set up a 3-point lighting configuration for an interview shot and photograph the setup with notes on each light's purpose."},
-      {name:"News Script Draft",due:"Aug 10",cls:"soon",status:"upcoming",points:25,studyTime:"1 hr 10 min",
+      {name:"News Script Draft",due:"Aug 10",cls:"soon",status:"upcoming",points:25,
         req:"Write a 60-second news segment script following AP broadcast style, including anchor intro and reporter package cues."},
-      {name:"Control Room Rotation Log",due:"Aug 13",cls:"soon",status:"upcoming",points:15,studyTime:"40 min",
+      {name:"Control Room Rotation Log",due:"Aug 13",cls:"soon",status:"upcoming",points:15,
         req:"Complete a rotation through director, technical director, and audio board roles during a live studio segment; submit a reflection log."},
-      {name:"Copyright & Fair Use Worksheet",due:"Aug 16",cls:"",status:"upcoming",points:15,studyTime:"40 min",
+      {name:"Copyright & Fair Use Worksheet",due:"Aug 16",cls:"",status:"upcoming",points:15,
         req:"Answer case-study questions on copyright law as it applies to broadcast footage, music, and archival clips."}
     ],
     past:[
@@ -889,21 +891,21 @@ const classes = {
       {name:"Equipment ID Quiz",score:"⚠️ EDIT /15",status:"graded"},
       {name:"First Camera Test Shoot",score:"⚠️ EDIT /25",status:"graded"}
     ]},
-  yearbook:{title:"Yearbook",icon:"📸",color:"#9e5a7f",teacher:"⚠️ EDIT teacher name",grade:"⚠️",pct:"90%",gradeClass:"a",day:"A",
+  yearbook:{title:"Yearbook",icon:"📸",color:"#9e5a7f",teacher:"Ms. Cardenas",grade:"⚠️",pct:"90%",gradeClass:"a",day:"A",
     upcoming:[
       {name:"Course Overview",due:"No due date set",cls:"soon",status:"upcoming",points:0,
         req:"A quality yearbook is a product of a quality team. This course acts like a functioning publication team with professional design standards, workflows, project management, and interpersonal communication. Skills covered include layout design and composition, project management, typography and color theory, photojournalism, file and data management, and interpersonal communication. Students distribute a final project to the entire school at year's end. Class fee contains the optional $400 Jostens Summer Camp."},
-      {name:"Spread Layout Draft 1",due:"Aug 19",cls:"",status:"upcoming",points:25,studyTime:"1 hr 10 min",
+      {name:"Spread Layout Draft 1",due:"Aug 19",cls:"",status:"upcoming",points:25,
         req:"Design a two-page spread draft for the Fall Sports section using the master style guide grid."},
-      {name:"Color Theory Worksheet",due:"Aug 22",cls:"",status:"upcoming",points:15,studyTime:"40 min",
+      {name:"Color Theory Worksheet",due:"Aug 22",cls:"",status:"upcoming",points:15,
         req:"Apply complementary and analogous color schemes to a sample spread and explain your choices."},
-      {name:"Photojournalism Assignment",due:"Aug 25",cls:"",status:"upcoming",points:20,studyTime:"55 min",
+      {name:"Photojournalism Assignment",due:"Aug 25",cls:"",status:"upcoming",points:20,
         req:"Shoot and submit 10 candid photos from a school event following photojournalism composition guidelines."},
-      {name:"Caption Writing Practice",due:"Aug 28",cls:"",status:"upcoming",points:10,studyTime:"30 min",
+      {name:"Caption Writing Practice",due:"Aug 28",cls:"",status:"upcoming",points:10,
         req:"Write AP-style captions for 8 provided photos, including full names and context."},
-      {name:"Deadline Section Check-In",due:"Aug 31",cls:"",status:"upcoming",points:15,studyTime:"40 min",
+      {name:"Deadline Section Check-In",due:"Aug 31",cls:"",status:"upcoming",points:15,
         req:"Submit your assigned section's progress: draft spreads, missing photos list, and interview status."},
-      {name:"Typography Style Guide Quiz",due:"Sep 3",cls:"",status:"upcoming",points:10,studyTime:"30 min",
+      {name:"Typography Style Guide Quiz",due:"Sep 3",cls:"",status:"upcoming",points:10,
         req:"Quiz on the yearbook's approved fonts, headline hierarchy, and body copy rules."}
     ],
     past:[
@@ -911,21 +913,21 @@ const classes = {
       {name:"Team Roles Reflection",score:"⚠️ EDIT /10",status:"graded"},
       {name:"Cover Concept Sketches",score:"⚠️ EDIT /20",status:"graded"}
     ]},
-  audio:{title:"Digital Audio 1",icon:"🎧",color:"#5e9e5a",teacher:"⚠️ EDIT teacher name",grade:"⚠️",pct:"90%",gradeClass:"a",day:"A",
+  audio:{title:"Digital Audio 1",icon:"🎧",color:"#5e9e5a",teacher:"Mr. Delgado",grade:"⚠️",pct:"90%",gradeClass:"a",day:"A",
     upcoming:[
       {name:"Course Overview",due:"No due date set",cls:"soon",status:"upcoming",points:0,
         req:"This introductory course takes a comprehensive approach to the fundamentals of audio production. Scholars will explore the principles, techniques, and tools in creating and manipulating sound."},
-      {name:"Waveform Basics Worksheet",due:"Sep 6",cls:"",status:"upcoming",points:10,studyTime:"30 min",
+      {name:"Waveform Basics Worksheet",due:"Sep 6",cls:"",status:"upcoming",points:10,
         req:"Label and explain amplitude, frequency, and waveform shapes on the provided diagrams."},
-      {name:"Microphone Types Quiz",due:"Sep 9",cls:"",status:"upcoming",points:10,studyTime:"30 min",
+      {name:"Microphone Types Quiz",due:"Sep 9",cls:"",status:"upcoming",points:10,
         req:"Quiz covering dynamic, condenser, and ribbon microphones and their ideal use cases."},
-      {name:"First Recording Session",due:"Sep 12",cls:"",status:"upcoming",points:25,studyTime:"1 hr 10 min",
+      {name:"First Recording Session",due:"Sep 12",cls:"",status:"upcoming",points:25,
         req:"Record a 1-minute voiceover clean take in the booth, export as WAV, and submit through the shared drive."},
-      {name:"EQ and Compression Exercise",due:"Sep 15",cls:"",status:"upcoming",points:20,studyTime:"55 min",
+      {name:"EQ and Compression Exercise",due:"Sep 15",cls:"",status:"upcoming",points:20,
         req:"Apply EQ and compression to a provided raw vocal track to clean up sibilance and even out levels."},
-      {name:"Podcast Segment Edit",due:"Sep 18",cls:"",status:"upcoming",points:25,studyTime:"1 hr 10 min",
+      {name:"Podcast Segment Edit",due:"Sep 18",cls:"",status:"upcoming",points:25,
         req:"Edit a 3-minute raw podcast segment: remove dead air, add intro/outro music, and balance levels."},
-      {name:"Sound Design Foley Project",due:"Sep 21",cls:"",status:"upcoming",points:20,studyTime:"55 min",
+      {name:"Sound Design Foley Project",due:"Sep 21",cls:"",status:"upcoming",points:20,
         req:"Create foley sound effects for a short silent video clip using household objects and layer them in your DAW."}
     ],
     past:[
@@ -933,21 +935,21 @@ const classes = {
       {name:"Signal Flow Diagram",score:"⚠️ EDIT /10",status:"graded"},
       {name:"Audio File Formats Quiz",score:"⚠️ EDIT /10",status:"graded"}
     ]},
-  precalc:{title:"Pre-Calculus",icon:"📐",color:"#4a8e9e",teacher:"⚠️ EDIT teacher name",grade:"⚠️",pct:"90%",gradeClass:"a",day:"B",
+  precalc:{title:"Pre-Calculus",icon:"📐",color:"#4a8e9e",teacher:"Mrs. Okafor",grade:"⚠️",pct:"90%",gradeClass:"a",day:"B",
     upcoming:[
       {name:"Course Overview",due:"No due date set",cls:"soon",status:"upcoming",points:0,
         req:"This class is for scholars who wish to take Calculus. Scholars can either take this in place of Math 3 or after completing Math 3. First semester is spent as an accelerated version of Math 3; second semester focuses on preparing scholars for Calculus, including the AP Calculus test."},
-      {name:"Functions & Transformations HW",due:"Sep 24",cls:"",status:"upcoming",points:20,studyTime:"55 min",
+      {name:"Functions & Transformations HW",due:"Sep 24",cls:"",status:"upcoming",points:20,
         req:"Complete problems on shifting, stretching, and reflecting parent functions."},
-      {name:"Polynomial Division Practice",due:"Sep 27",cls:"",status:"upcoming",points:20,studyTime:"55 min",
+      {name:"Polynomial Division Practice",due:"Sep 27",cls:"",status:"upcoming",points:20,
         req:"Practice long division and synthetic division of polynomials, showing all steps."},
-      {name:"Rational Functions Quiz",due:"Sep 30",cls:"",status:"upcoming",points:25,studyTime:"1 hr 10 min",
+      {name:"Rational Functions Quiz",due:"Sep 30",cls:"",status:"upcoming",points:25,
         req:"Quiz covering asymptotes, holes, and end behavior of rational functions."},
-      {name:"Trigonometric Identities Worksheet",due:"Oct 3",cls:"",status:"upcoming",points:20,studyTime:"55 min",
+      {name:"Trigonometric Identities Worksheet",due:"Oct 3",cls:"",status:"upcoming",points:20,
         req:"Prove and simplify expressions using fundamental trig identities."},
-      {name:"Unit Circle Mastery Check",due:"Oct 6",cls:"",status:"upcoming",points:15,studyTime:"40 min",
+      {name:"Unit Circle Mastery Check",due:"Oct 6",cls:"",status:"upcoming",points:15,
         req:"Timed check requiring exact values of sine, cosine, and tangent at standard unit circle angles."},
-      {name:"Limits Intro Packet",due:"Oct 9",cls:"",status:"upcoming",points:20,studyTime:"55 min",
+      {name:"Limits Intro Packet",due:"Oct 9",cls:"",status:"upcoming",points:20,
         req:"Introductory packet on evaluating limits graphically and numerically, preparing for Calculus concepts."}
     ],
     past:[
@@ -955,21 +957,21 @@ const classes = {
       {name:"Function Notation Quiz",score:"⚠️ EDIT /15",status:"graded"},
       {name:"Graphing Basics Test",score:"⚠️ EDIT /100",status:"graded"}
     ]},
-  latin:{title:"Latin 1",icon:"🏛️",color:"#9e8a4a",teacher:"⚠️ EDIT teacher name",grade:"⚠️",pct:"90%",gradeClass:"a",day:"B",
+  latin:{title:"Latin 1",icon:"🏛️",color:"#9e8a4a",teacher:"Mr. Bennion",grade:"⚠️",pct:"90%",gradeClass:"a",day:"B",
     upcoming:[
       {name:"Course Overview",due:"No due date set",cls:"soon",status:"upcoming",points:0,
         req:"Latin is not dead! Through classic works, art, culture, and modern applications, scholars learn to read and speak Latin (and even do some medieval art), while experiencing the rich history of Rome and its profound influence on Europe and beyond."},
-      {name:"Vocabulary Set 1 Quiz",due:"Oct 12",cls:"",status:"upcoming",points:10,studyTime:"30 min",
+      {name:"Vocabulary Set 1 Quiz",due:"Oct 12",cls:"",status:"upcoming",points:10,
         req:"Quiz on Chapter 1 vocabulary: nouns, verbs, and common phrases."},
-      {name:"Noun Declension Worksheet",due:"Oct 15",cls:"",status:"upcoming",points:20,studyTime:"55 min",
+      {name:"Noun Declension Worksheet",due:"Oct 15",cls:"",status:"upcoming",points:20,
         req:"Decline the provided first and second declension nouns in all cases, singular and plural."},
-      {name:"Roman Culture Reading Response",due:"Oct 18",cls:"",status:"upcoming",points:15,studyTime:"40 min",
+      {name:"Roman Culture Reading Response",due:"Oct 18",cls:"",status:"upcoming",points:15,
         req:"Read the assigned passage on daily life in ancient Rome and write a half-page response."},
-      {name:"Verb Conjugation Practice",due:"Oct 21",cls:"",status:"upcoming",points:20,studyTime:"55 min",
+      {name:"Verb Conjugation Practice",due:"Oct 21",cls:"",status:"upcoming",points:20,
         req:"Conjugate first conjugation verbs in the present tense across all persons."},
-      {name:"Translation Exercise — Chapter 2",due:"Oct 24",cls:"",status:"upcoming",points:25,studyTime:"1 hr 10 min",
+      {name:"Translation Exercise — Chapter 2",due:"Oct 24",cls:"",status:"upcoming",points:25,
         req:"Translate the Chapter 2 reading passage from Latin to English, showing your work for tricky constructions."},
-      {name:"Roman Art Mini-Project",due:"Oct 27",cls:"",status:"upcoming",points:20,studyTime:"55 min",
+      {name:"Roman Art Mini-Project",due:"Oct 27",cls:"",status:"upcoming",points:20,
         req:"Recreate a small piece of Roman mosaic or fresco-style art and write a short artist's statement connecting it to a cultural theme studied in class."}
     ],
     past:[
@@ -977,21 +979,21 @@ const classes = {
       {name:"Greeting Phrases Test",score:"⚠️ EDIT /15",status:"graded"},
       {name:"Intro to Roman History Worksheet",score:"⚠️ EDIT /15",status:"graded"}
     ]},
-  photo:{title:"Commercial Photography 2",icon:"📷",color:"#8579b8",teacher:"⚠️ EDIT teacher name",grade:"⚠️",pct:"90%",gradeClass:"a",day:"B",
+  photo:{title:"Commercial Photography 2",icon:"📷",color:"#8579b8",teacher:"Ms. Hollingsworth",grade:"⚠️",pct:"90%",gradeClass:"a",day:"B",
     upcoming:[
       {name:"Course Overview",due:"No due date set",cls:"soon",status:"upcoming",points:0,
         req:"A continuation of CP1 with greater emphasis on technical skill including exposure settings, lighting styles and methods, digital editing and output, and professional practices. A portfolio of each scholar's work is expected at the end of the course. Access to a DSLR camera is necessary for completion of this course."},
-      {name:"Manual Exposure Practice Set",due:"Oct 30",cls:"",status:"upcoming",points:20,studyTime:"55 min",
+      {name:"Manual Exposure Practice Set",due:"Oct 30",cls:"",status:"upcoming",points:20,
         req:"Shoot 10 photos in full manual mode demonstrating control of aperture, shutter speed, and ISO."},
-      {name:"Studio Lighting Diagram",due:"Nov 2",cls:"",status:"upcoming",points:15,studyTime:"40 min",
+      {name:"Studio Lighting Diagram",due:"Nov 2",cls:"",status:"upcoming",points:15,
         req:"Diagram and photograph a 2-light studio portrait setup, labeling key light, fill light, and modifiers used."},
-      {name:"Product Photography Shoot",due:"Nov 5",cls:"",status:"upcoming",points:25,studyTime:"1 hr 10 min",
+      {name:"Product Photography Shoot",due:"Nov 5",cls:"",status:"upcoming",points:25,
         req:"Photograph a small product using commercial lighting techniques suitable for an online listing."},
-      {name:"Retouching & Editing Assignment",due:"Nov 8",cls:"",status:"upcoming",points:20,studyTime:"55 min",
+      {name:"Retouching & Editing Assignment",due:"Nov 8",cls:"",status:"upcoming",points:20,
         req:"Retouch a provided portrait image using non-destructive editing techniques; submit before/after versions."},
-      {name:"Client Brief Response",due:"Nov 11",cls:"",status:"upcoming",points:15,studyTime:"40 min",
+      {name:"Client Brief Response",due:"Nov 11",cls:"",status:"upcoming",points:15,
         req:"Read a mock client brief and submit a shot list and mood board proposal before shooting."},
-      {name:"Portfolio Section Draft",due:"Nov 14",cls:"",status:"upcoming",points:25,studyTime:"1 hr 10 min",
+      {name:"Portfolio Section Draft",due:"Nov 14",cls:"",status:"upcoming",points:25,
         req:"Select and sequence 8 of your best images so far into a draft portfolio section with consistent editing style."}
     ],
     past:[
@@ -1006,10 +1008,113 @@ const SCHOOL_YEAR = 2026;
 
 const titles = {dashboard:"Dashboard",classdetail:"Class Detail",assignment:"Assignment",workspace:"AI Workspace",
   calendar:"Calendar",attendance:"Attendance",attdetail:"Attendance Detail",inbox:"Inbox",email:"Email",ai:"AI",localai:"Jarvis",
-  update:"Update",history:"History"};
+  update:"Update"};
 
 let currentClassId = null;
 let pendingUploadTarget = null;
+
+/* =====================================================================
+   DATA HYDRATION — runs once at startup, before anything renders.
+
+   Everything here derives values that Infinite Campus doesn't hand you
+   directly: study-time estimates, due-date urgency colours, and (until
+   real scores exist) stand-in grades. It only fills gaps, so once the
+   scraper starts writing real numbers into `classes`, these functions
+   step aside on their own.
+   ===================================================================== */
+
+/* Stable pseudo-random from a string, so a class keeps the same stand-in
+   grade across reloads instead of jumping around every refresh. */
+function seedFrom(str){
+  let x = 0;
+  for(let i=0;i<str.length;i++) x = (x*31 + str.charCodeAt(i)) >>> 0;
+  return function(){ x = (x*1664525 + 1013904223) >>> 0; return x / 4294967296; };
+}
+
+function formatMins(m){
+  if(m < 60) return m + ' min';
+  const hrs = Math.floor(m/60), rest = m % 60;
+  return rest ? `${hrs} hr ${rest} min` : `${hrs} hr`;
+}
+
+/* Study time from the shape of the assignment: how much it's worth, how
+   much it asks for, and what kind of task it is. Works on any assignment,
+   including ones that arrive from Infinite Campus with no time attached. */
+function estimateStudyTime(a){
+  const text = ((a.name || '') + ' ' + (a.req || '')).toLowerCase();
+  const words = String(a.req || '').trim().split(/\s+/).length;
+  let mins = 10 + (a.points || 0) * 1.6 + words * 0.35;
+  if(/\b(quiz|check|worksheet|log|caption|reflection|response)\b/.test(text)) mins *= 0.75;
+  if(/\b(project|portfolio|shoot|record|edit|draft|essay|presentation|film)\b/.test(text)) mins *= 1.35;
+  if(/\b(test|exam|final|midterm)\b/.test(text)) mins *= 1.5;
+  mins = Math.max(15, Math.min(240, Math.round(mins/5)*5));
+  return formatMins(mins);
+}
+
+/* Red / amber / plain, from how soon it's actually due. */
+function urgencyClass(due){
+  const d = parseDue(due);
+  if(!d) return 'soon';
+  const days = Math.round((d - TODAY) / 86400000);
+  if(days <= 3) return 'hot';
+  if(days <= 10) return 'soon';
+  return '';
+}
+
+function hydrateData(){
+  Object.entries(classes).forEach(([id, c])=>{
+    const rand = seedFrom(id);
+
+    // Stand-in class grade, 90–96%. Delete this block once Infinite Campus
+    // supplies the real percentage.
+    if(!c.realGrade){
+      const pct = 90 + Math.floor(rand() * 7);
+      c.pct = pct + '%';
+      c.grade = pctToLetter(pct);
+    }
+    const target = parseFloat(c.pct);
+
+    // Stand-in past scores that roughly match that grade, so the what-if
+    // maths and Jarvis's estimates have real numbers to work from.
+    c.past.forEach(p=>{
+      if(!/⚠️/.test(p.score)) return;              // real score already there
+      const den = parseInt((p.score.match(/\/\s*(\d+)/) || [])[1] || 20, 10);
+      const jitter = (rand() * 8) - 4;              // ±4 points either way
+      const earned = Math.max(0, Math.min(den, Math.round(den * (target + jitter) / 100)));
+      p.score = earned + '/' + den;
+      p.isPlaceholder = true;
+    });
+
+    // These two always run, including on freshly scraped assignments.
+    c.upcoming.forEach(a=>{
+      if(a.points && !a.studyTime) a.studyTime = estimateStudyTime(a);
+      a.cls = urgencyClass(a.due);
+    });
+  });
+}
+
+/* Optional: hand one assignment to Jarvis for a better time estimate. */
+async function refineStudyTime(classId, idx){
+  const c = classes[classId], a = c.upcoming[idx];
+  const btn = document.getElementById('refine-time-btn');
+  if(btn){ btn.disabled = true; btn.textContent = '✦ Thinking…'; }
+  try{
+    const out = await jarvisChat([
+      { role:'system', content:'You estimate how long schoolwork takes. Reply with ONLY a JSON object like {"minutes": 45, "why": "one short sentence"} and nothing else.' },
+      { role:'user', content: `Assignment: ${a.name}\nClass: ${c.title}\nWorth ${a.points} points\nWhat it asks: ${truncate(a.req, 500)}\n\nHow many minutes of focused work should a high school student budget?` }
+    ], { temperature:0.3 });
+    const m = out.match(/\{[\s\S]*\}/);
+    const mins = m ? Math.round(Number(JSON.parse(m[0]).minutes)) : NaN;
+    if(!isFinite(mins) || mins <= 0) throw new Error('no usable number');
+    a.studyTime = formatMins(Math.max(5, Math.min(480, mins)));
+    a.studyTimeSource = 'Jarvis';
+    a.studyTimeWhy = (m ? JSON.parse(m[0]).why : '') || '';
+    openAssignment(classId, 'upcoming', idx);
+  }catch(e){
+    if(btn){ btn.disabled = false; btn.textContent = '✦ Retry'; }
+    alert('Jarvis couldn\'t estimate that one: ' + e.message);
+  }
+}
 
 /* ===================== FILE UPLOAD ===================== */
 function triggerUpload(classId, idx, context){
@@ -1155,38 +1260,76 @@ function resetAllWhatIf(classId){
   whatIfState[classId] = { ...whatIfDefaults[classId] };
   openClass(classId);
 }
-function generateEstimateForAssignment(classId, idx){
+function applyEstimate(classId, idx, pct, note){
   const c = classes[classId];
   const a = c.upcoming[idx];
   whatIfDefaults[classId] = whatIfDefaults[classId] || {};
   whatIfState[classId] = whatIfState[classId] || {};
-  let pastEarned=0, pastTotal=0;
-  c.past.forEach(p=>{
-    const m = p.score.match(/([\d.]+)\s*\/\s*([\d.]+)/);
-    if(m){ pastEarned += parseFloat(m[1]); pastTotal += parseFloat(m[2]); }
-  });
-  const baseline = pastTotal>0 ? (pastEarned/pastTotal)*100 : parseFloat(c.pct);
-  const jitter = Math.round((Math.random()*16)-8);
-  const pct = Math.max(55, Math.min(99, Math.round(baseline + jitter)));
-  const letter = pctToLetter(pct);
-  const hasFile = a.turnIn && a.turnIn.length;
-  const note = hasFile
-    ? `Based on the file you turned in, compared against how you've scored on similar ${c.title} work.`
-    : `No file turned in yet, so this is based on your track record in ${c.title} so far — turn something in for a more accurate read.`;
-  a.aiEstimate = {pct: pct+'%', letter, note};
+  pct = Math.max(0, Math.min(100, Math.round(pct)));
+  a.aiEstimate = { pct: pct + '%', letter: pctToLetter(pct), note };
   whatIfDefaults[classId][idx] = pct;
-  if(whatIfState[classId][idx]===undefined) whatIfState[classId][idx] = pct;
+  if(whatIfState[classId][idx] === undefined) whatIfState[classId][idx] = pct;
   logEstimateConversation(c, a);
 }
-function getAiEstimate(classId, idx){
-  const btn = document.getElementById(`get-est-${classId}-${idx}`);
+
+/* Fallback: average of past scores, nudged a few points either way. */
+function heuristicEstimate(classId, idx){
+  const c = classes[classId];
+  const a = c.upcoming[idx];
+  let earned = 0, total = 0;
+  c.past.forEach(p=>{
+    const m = p.score.match(/([\d.]+)\s*\/\s*([\d.]+)/);
+    if(m){ earned += parseFloat(m[1]); total += parseFloat(m[2]); }
+  });
+  const baseline = total > 0 ? (earned/total)*100 : parseFloat(c.pct);
+  const pct = Math.max(55, Math.min(99, Math.round(baseline + (Math.random()*16 - 8))));
+  const hasFile = a.turnIn && a.turnIn.length;
+  const note = (total > 0)
+    ? `Rough guess from your average in ${c.title}${hasFile ? ', and the fact you\'ve turned something in' : ' — nothing turned in yet'}. Jarvis wasn\'t reachable, so this is just arithmetic, not a read of your work.`
+    : `No graded scores in ${c.title} yet, so this is barely more than a placeholder. Fill in the ⚠️ EDIT scores for something meaningful.`;
+  applyEstimate(classId, idx, pct, note);
+}
+
+/* Asks Jarvis for a number. Returns true if it worked. */
+async function jarvisEstimate(classId, idx){
+  const c = classes[classId];
+  const a = c.upcoming[idx];
+  const out = await jarvisChat([
+    { role:'system', content:'You estimate likely grades. Reply with ONLY a JSON object in the form {"pct": 87, "why": "one short sentence"} and nothing else — no preamble, no code fence.' },
+    { role:'user', content:
+        `Class: ${c.title}\n` +
+        `My graded work so far: ${c.past.map(p=>p.name + ' ' + p.score).join('; ') || 'none yet'}\n` +
+        `Assignment: ${a.name}, worth ${a.points} points\n` +
+        `Requirements: ${truncate(a.req, 400)}\n` +
+        `Turned in: ${a.turnIn && a.turnIn.length ? a.turnIn[0].name : 'nothing yet'}\n\n` +
+        `What percentage am I likely to score?` }
+  ], { temperature:0.2 });
+  const match = out.match(/\{[\s\S]*\}/);
+  if(!match) throw new Error('no JSON in reply');
+  const parsed = JSON.parse(match[0]);
+  const pct = Number(parsed.pct);
+  if(!isFinite(pct)) throw new Error('no usable number');
+  applyEstimate(classId, idx, pct, (parsed.why || 'Estimated by Jarvis.') + ' — Jarvis, running on your Mac mini.');
+  return true;
+}
+
+async function runEstimate(classId, idx, btnId, after){
+  const btn = document.getElementById(btnId);
   if(btn){ btn.textContent = '🤖 Analyzing…'; btn.classList.add('loading'); btn.disabled = true; }
-  setTimeout(()=>{ generateEstimateForAssignment(classId, idx); openClass(classId); }, 700);
+  try{
+    await jarvisEstimate(classId, idx);
+  }catch(e){
+    console.warn('Jarvis estimate failed, falling back to arithmetic:', e.message);
+    heuristicEstimate(classId, idx);
+  }
+  after();
+}
+
+function getAiEstimate(classId, idx){
+  runEstimate(classId, idx, `get-est-${classId}-${idx}`, ()=>openClass(classId));
 }
 function getAiEstimateOnPage(classId, idx){
-  const btn = document.getElementById(`get-est-page-${classId}-${idx}`);
-  if(btn){ btn.textContent = '🤖 Analyzing…'; btn.classList.add('loading'); btn.disabled = true; }
-  setTimeout(()=>{ generateEstimateForAssignment(classId, idx); openAssignment(classId,'upcoming',idx); }, 700);
+  runEstimate(classId, idx, `get-est-page-${classId}-${idx}`, ()=>openAssignment(classId, 'upcoming', idx));
 }
 
 function openClass(id){
@@ -1270,7 +1413,7 @@ function openClass(id){
           ${a.list==='upcoming' ? `<button class="workspace-btn" onclick="event.stopPropagation(); openWorkspace('${id}', ${a.idx})">🤖 Open AI Workspace</button>` : ''}
           ${getEstBtn}
           ${(a.aiEstimate && estOn) ? `<h5>Claude's Estimated Grade</h5><div style="font-size:12px;color:#b89bf5;">${a.aiEstimate.pct} (${a.aiEstimate.letter}) — ${a.aiEstimate.note}</div>` : ''}
-          ${(a.studyTime && a.list==='upcoming') ? `<h5>🤖 AI-Estimated Study Time</h5><div style="font-size:12px;color:#7ec4f0;">⏱ ${a.studyTime} — estimated from the assignment's scope, point value, and how long similar work has taken you before.</div>` : ''}
+          ${(a.studyTime && a.list==='upcoming') ? `<h5>⏱ Estimated Study Time</h5><div style="font-size:12px;color:#7ec4f0;">${a.studyTime}${a.studyTimeSource==='Jarvis' ? ' — estimated by Jarvis' : ' — from the point value and how much the instructions ask for'}</div>` : ''}
           ${whatIfHtml}
           <span class="cs-view-link" onclick="event.stopPropagation(); openAssignment('${id}','${a.list}',${a.idx})">Open full details →</span>
         </div>
@@ -1302,11 +1445,14 @@ function openAssignment(classId, list, idx){
   if(list==='upcoming' && a.studyTime){
     studyCard.style.display = '';
     studyCard.innerHTML = `
-      <h4 style="font-size:11px;letter-spacing:0.5px;color:var(--dim);text-transform:uppercase;margin-bottom:8px;">🤖 AI-Estimated Study Time</h4>
+      <h4 style="font-size:11px;letter-spacing:0.5px;color:var(--dim);text-transform:uppercase;margin-bottom:8px;">⏱ Estimated Study Time</h4>
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
         <div style="font-size:22px;font-weight:800;color:#7ec4f0;">⏱ ${a.studyTime}</div>
-        <div style="font-size:12px;color:var(--dim);line-height:1.5;flex:1 1 200px;">Estimated by Claude from this assignment's scope, point value, and how long similar work has taken you before.</div>
-      </div>`;
+        <div style="font-size:12px;color:var(--dim);line-height:1.5;flex:1 1 200px;">${a.studyTimeSource==='Jarvis'
+          ? escapeHtml(a.studyTimeWhy || 'Estimated by Jarvis from the full requirements.')
+          : "Worked out from this assignment's point value, how much the instructions ask for, and what kind of task it is."}</div>
+      </div>
+      <button class="workspace-btn" id="refine-time-btn" onclick="refineStudyTime('${classId}', ${idx})">✦ Refine with Jarvis</button>`;
   } else { studyCard.style.display='none'; studyCard.innerHTML=''; }
 
   const turninBox = document.getElementById('m-turnin');
@@ -1408,11 +1554,12 @@ function openWorkspace(classId, idx){
       <button class="ws-swap-btn" onclick="renderWorkspacePicker()">Switch assignment</button>
     </div>
     <div class="ws-summary">
-      <h4>✦ AI Summary — how to complete this</h4>
-      <div class="ws-summary-body">
+      <h4>✦ How to complete this</h4>
+      <div class="ws-summary-body" id="wsAiOut">
         <ol>${summary.steps.map(s=>`<li>${s}</li>`).join('')}</ol>
         ${a.studyTime ? `<div class="ws-time-pill">⏱ Estimated time: ${a.studyTime}</div>` : ''}
       </div>
+      <button class="workspace-btn" id="wsAiBtn" style="margin-top:14px;" onclick="workspaceAsk('${classId}', ${idx})">✦ Ask Jarvis for a real plan</button>
     </div>
     <div class="ws-grid">
       <div class="ws-card">
@@ -1449,6 +1596,42 @@ function openWorkspace(classId, idx){
 
   go('workspace');
   document.getElementById('topTitle').textContent = 'AI Workspace — ' + a.name;
+}
+
+/* Hands the assignment to Jarvis and replaces the checklist with its answer. */
+async function workspaceAsk(classId, idx){
+  const c = classes[classId];
+  const a = c.upcoming[idx];
+  const box = document.getElementById('wsAiOut');
+  const btn = document.getElementById('wsAiBtn');
+  btn.disabled = true;
+  btn.textContent = '✦ Thinking…';
+  box.innerHTML = '<div class="email-loading">Jarvis is reading the assignment and your past work in this class…</div>';
+
+  const related = findRelatedEmails(classId);
+  const focus =
+    'FOCUS ASSIGNMENT (answer about this one):\n' +
+    `Class: ${c.title} (teacher ${c.teacher})\n` +
+    `Name: ${a.name}\n` +
+    `Due: ${a.due} — worth ${a.points} points\n` +
+    `Full requirements: ${a.req}\n` +
+    `Turned in so far: ${a.turnIn && a.turnIn.length ? a.turnIn[0].name : 'nothing yet'}\n` +
+    `My graded work in this class: ${c.past.map(p=>p.name + ' ' + p.score).join('; ') || 'none yet'}\n` +
+    `Related emails: ${related.length ? related.map(m=>m.s + ' — ' + m.subj).join(' | ') : 'none'}`;
+
+  try{
+    const out = await jarvisChat([
+      { role:'system', content: jarvisSystemPrompt(focus) },
+      { role:'user', content: `Give me a plan for finishing "${a.name}". Use at most 6 numbered steps. Say what to do first, roughly how long each step should take, and end with one thing people commonly lose points on for this kind of work.` }
+    ], { temperature:0.5 });
+    box.innerHTML = `<div style="white-space:pre-wrap;">${escapeHtml(out)}</div>`
+      + (a.studyTime ? `<div class="ws-time-pill">⏱ App estimate: ${a.studyTime}</div>` : '');
+    btn.textContent = '✦ Ask Jarvis again';
+  }catch(e){
+    box.innerHTML = `<div class="ws-empty">${escapeHtml(e.message)}</div>`;
+    btn.textContent = '✦ Retry';
+  }
+  btn.disabled = false;
 }
 
 /* =====================================================================
@@ -1802,8 +1985,8 @@ function downloadICS(title, className, due){
 const attendanceRecords = [
   {id:'att-1', date:'2026-07-07', type:'Absence', reason:'Field Trip — Science Museum', excused:true,  periods:'All day',   recordedBy:'Front office'},
   {id:'att-2', date:'2026-07-15', type:'Absence', reason:'Sick',                        excused:true,  periods:'All day',   recordedBy:'Parent call-in'},
-  {id:'att-3', date:'2026-07-11', type:'Tardy',   reason:'Traffic',                     excused:false, periods:'Period 1',  recordedBy:'Mr. Johnson'},
-  {id:'att-4', date:'2026-07-18', type:'Tardy',   reason:'Overslept',                   excused:false, periods:'Period 1',  recordedBy:'Mr. Johnson'},
+  {id:'att-3', date:'2026-07-11', type:'Tardy',   reason:'Traffic',                     excused:false, periods:'Period 1',  recordedBy:'Mrs. Okafor'},
+  {id:'att-4', date:'2026-07-18', type:'Tardy',   reason:'Overslept',                   excused:false, periods:'Period 1',  recordedBy:'Mrs. Okafor'},
   {id:'att-5', date:'2026-07-22', type:'Tardy',   reason:'Doctor appointment',          excused:true,  periods:'Period 3',  recordedBy:'Front office'}
 ];
 const PRESENT_DAYS = 86; // ⚠️ EDIT with the real number from Infinite Campus
@@ -1932,11 +2115,11 @@ function deleteAttNote(i){
 /* ===================== INBOX ===================== */
 /* Sample mail, shown until you connect Gmail. Real messages replace this. */
 const SAMPLE_INBOX = [
-  {a:'📺',s:'Mrs. Smith',subj:'Studio time moved to Friday — bring your SD card',date:'2h ago',unread:true,type:'teacher'},
+  {a:'📺',s:'Mr. Whitaker',subj:'Studio time moved to Friday — bring your SD card',date:'2h ago',unread:true,type:'teacher'},
   {a:'🏫',s:'School Admin',subj:'No School — Aug 26, staff development day',date:'1d ago',unread:true,type:'admin'},
-  {a:'📐',s:'Mr. Johnson',subj:'Unit 1 feedback posted, check your grade',date:'2d ago',unread:false,type:'teacher'},
-  {a:'📸',s:'Ms. Davis',subj:'Yearbook spread rubric attached, due Friday',date:'3d ago',unread:false,type:'teacher'},
-  {a:'🏛️',s:'Mr. Brown',subj:'Latin vocabulary packet now available',date:'4d ago',unread:false,type:'teacher'},
+  {a:'📐',s:'Mrs. Okafor',subj:'Unit 1 feedback posted, check your grade',date:'2d ago',unread:false,type:'teacher'},
+  {a:'📸',s:'Ms. Cardenas',subj:'Yearbook spread rubric attached, due Friday',date:'3d ago',unread:false,type:'teacher'},
+  {a:'🏛️',s:'Mr. Bennion',subj:'Latin vocabulary packet now available',date:'4d ago',unread:false,type:'teacher'},
   {a:'🏫',s:'School Admin',subj:'Picture retake day scheduled for next month',date:'5d ago',unread:false,type:'admin'},
 ];
 let inboxMsgs = SAMPLE_INBOX.slice();
@@ -1949,6 +2132,7 @@ function setInboxFilter(f){
 function renderInbox(){
   const filtered = inboxMsgs.filter(m=>{
     if(m.acctId && !accountOn(m.acctId)) return false;
+    if(acctFilter !== 'all' && m.acctId !== acctFilter) return false;
     if(inboxFilter==='all') return true;
     if(inboxFilter==='unread') return m.unread;
     return m.type===inboxFilter;
@@ -1991,6 +2175,7 @@ const ADMIN_SENDER_HINTS = ['noreply','no-reply','donotreply','infinitecampus','
 let gmailTokenClient = null;
 let gmailAccounts = [];   // [{id, email, token, color, error}]
 let gmailLoading = false;
+let acctFilter = 'all';   // 'all', or a single account id to view on its own
 
 /* An account that's switched off stays connected but is hidden from the
    inbox, so you can read one mailbox at a time without signing out. */
@@ -2002,6 +2187,7 @@ function toggleGmailAccount(id){
   const a = gmailAccounts.find(x=>x.id===id);
   if(!a) return;
   a.enabled = a.enabled === false;
+  if(a.enabled === false && acctFilter === id) acctFilter = 'all';
   renderGmailAccounts();
   renderAcctFilter();
   renderInbox();
@@ -2065,6 +2251,7 @@ async function registerGmailAccount(token){
 function disconnectGmail(id){
   gmailAccounts = gmailAccounts.filter(a=>a.id!==id);
   openEmails = openEmails.filter(e=>e.acctId!==id);
+  if(acctFilter === id) acctFilter = 'all';
   if(gmailAccounts.length) fetchAllGmail();
   else { inboxMsgs = SAMPLE_INBOX.slice(); renderGmailAccounts(); renderAcctFilter(); renderInbox(); updateUnreadBadge(); }
 }
@@ -2185,12 +2372,24 @@ function renderGmailAccounts(){
     + (gmailAccounts.length ? `<button class="cal-add-btn" onclick="fetchAllGmail()">↻ Refresh</button>` : '')
     + (gmailAccounts.length ? '' : '<span class="inbox-status">Showing sample mail</span>');
 }
+function setAcctFilter(id){ acctFilter = id; renderAcctFilter(); renderInbox(); }
 function renderAcctFilter(){
   const el = document.getElementById('acctFilterBar');
   if(!el) return;
-  const off = gmailAccounts.filter(a=>a.enabled===false);
-  if(!off.length){ el.innerHTML = ''; return; }
-  el.innerHTML = `<span class="acct-hint">Hidden: ${off.map(a=>escapeHtml(a.email)).join(', ')} — tap the switch above to bring ${off.length===1?'it':'them'} back.</span>`;
+  const on = gmailAccounts.filter(a=>a.enabled !== false);
+  const off = gmailAccounts.filter(a=>a.enabled === false);
+  let html = '';
+  if(on.length > 1){
+    html += `<button class="inbox-filter-chip ${acctFilter==='all'?'active':''}" onclick="setAcctFilter('all')">All accounts</button>`
+      + on.map(a=>`
+        <button class="inbox-filter-chip ${acctFilter===a.id?'active':''}" onclick="setAcctFilter('${a.id}')">
+          <span class="acct-dot" style="background:${a.color};display:inline-block;margin-right:6px;"></span>${escapeHtml(a.email.split('@')[0])}
+        </button>`).join('');
+  }
+  if(off.length){
+    html += `<span class="acct-hint" style="align-self:center;margin-left:4px;">Hidden: ${off.map(a=>escapeHtml(a.email)).join(', ')}</span>`;
+  }
+  el.innerHTML = html;
 }
 
 /* ---- reading a message: several stay open as tabs ---- */
@@ -2437,7 +2636,11 @@ try{
    kills the request. Only switch it on if you actually see ngrok's interstitial
    warning page instead of JSON. */
 let ollamaSkipHeader = false;
-try{ ollamaSkipHeader = localStorage.getItem('ollamaSkipHeader') === '1'; }catch(e){}
+let jarvisUseData = true;   // send grades / attendance / email as context
+try{
+  ollamaSkipHeader = localStorage.getItem('ollamaSkipHeader') === '1';
+  jarvisUseData = localStorage.getItem('jarvisUseData') !== '0';
+}catch(e){}
 
 function ollamaHeaders(){
   const h = { 'Content-Type':'application/json' };
@@ -2453,6 +2656,7 @@ function toggleJarvisSettings(){
     document.getElementById('jarvisUrlInput').value = ollamaUrl;
     document.getElementById('jarvisModelInput').value = ollamaModel;
     document.getElementById('jarvisSkipHeader').checked = ollamaSkipHeader;
+    document.getElementById('jarvisUseData').checked = jarvisUseData;
   }
 }
 function saveJarvisSettings(){
@@ -2461,10 +2665,12 @@ function saveJarvisSettings(){
   if(url) ollamaUrl = url;
   if(model) ollamaModel = model;
   ollamaSkipHeader = document.getElementById('jarvisSkipHeader').checked;
+  jarvisUseData = document.getElementById('jarvisUseData').checked;
   try{
     localStorage.setItem('ollamaUrl', ollamaUrl);
     localStorage.setItem('ollamaModel', ollamaModel);
     localStorage.setItem('ollamaSkipHeader', ollamaSkipHeader ? '1' : '0');
+    localStorage.setItem('jarvisUseData', jarvisUseData ? '1' : '0');
   }catch(e){}
   document.getElementById('jarvisSettings').style.display = 'none';
   testJarvis();
@@ -2524,6 +2730,85 @@ async function testJarvis(){
   }
 }
 
+/* ---------------------------------------------------------------
+   Everything the app knows, flattened into text the model can read.
+   Assignment descriptions are truncated so the whole snapshot stays
+   small enough to fit in the model's context window.
+   --------------------------------------------------------------- */
+function truncate(s, n){
+  s = String(s == null ? '' : s);
+  return s.length > n ? s.slice(0, n-1) + '…' : s;
+}
+function buildAppContext(){
+  const L = [];
+  L.push('TODAY: ' + new Date().toDateString());
+  L.push('');
+  L.push('=== CLASSES, GRADES AND ASSIGNMENTS ===');
+  Object.entries(classes).forEach(([id,c])=>{
+    const proj = computeProjectedForClass(id);
+    L.push(`${c.title} — teacher ${c.teacher} — projected ${proj.pct}% (${proj.letter})`);
+    const graded = c.past.map(p=>`${p.name} ${p.score}`).join('; ');
+    if(graded) L.push(`  already graded: ${graded}`);
+    c.upcoming.filter(a=>a.points).forEach(a=>{
+      const turned = a.turnIn && a.turnIn.length ? 'turned in ' + a.turnIn[0].name : 'nothing turned in';
+      L.push(`  UPCOMING "${a.name}" due ${a.due}, ${a.points} pts, est. study time ${a.studyTime || 'unknown'}, ${turned}${a.aiEstimate ? ', estimated ' + a.aiEstimate.pct : ''}`);
+      L.push(`    what it asks: ${truncate(a.req, 170)}`);
+    });
+  });
+  L.push('');
+  L.push('=== ATTENDANCE ===');
+  const s = attStats();
+  L.push(`Overall ${s.rate}% — ${PRESENT_DAYS} present, ${s.absences} absences (${s.excusedAbs} excused), ${s.tardies} tardies.`);
+  attendanceRecords.forEach(r=>{
+    const notes = (attNotes[r.id] || []).map(n=>n.text);
+    L.push(`${r.date} ${r.type}: ${r.reason} — ${r.excused ? 'excused' : 'unexcused'}, ${r.periods}${notes.length ? ' | my notes: ' + truncate(notes.join(' / '), 130) : ''}`);
+  });
+  L.push('');
+  L.push('=== RECENT EMAIL ===');
+  inboxMsgs.slice(0, 15).forEach(m=>{
+    L.push(`${m.s} (${m.date}): ${truncate(m.subj, 90)}${m.snippet ? ' — ' + truncate(m.snippet, 110) : ''}`);
+  });
+  return L.join('\n');
+}
+
+function jarvisSystemPrompt(extra){
+  let p = "You are Jarvis, a study assistant built into Alex's school dashboard. "
+        + "Answer using the DATA below, and be specific — name real assignments, dates and numbers rather than talking in generalities. "
+        + "Keep answers short unless asked for detail. If the data doesn't cover something, say so plainly instead of inventing it. "
+        + "Values marked with a warning symbol are placeholders that haven't been filled in yet; treat them as unknown.";
+  if(jarvisUseData) p += '\n\n=== DATA ===\n' + buildAppContext();
+  if(extra) p += '\n\n' + extra;
+  return p;
+}
+
+/* Low-level call to Ollama's chat endpoint. Throws a readable error. */
+async function jarvisChat(messages, opts){
+  opts = opts || {};
+  const res = await fetch(`${ollamaUrl}/api/chat`, {
+    method:'POST',
+    headers: ollamaHeaders(),
+    body: JSON.stringify({
+      model: ollamaModel,
+      messages,
+      stream: false,
+      options: { num_ctx: opts.num_ctx || 8192, temperature: opts.temperature == null ? 0.6 : opts.temperature }
+    })
+  });
+  const text = await res.text();
+  if(!res.ok) throw new Error(explainOllamaFailure(null, res, text));
+  let data;
+  try{ data = JSON.parse(text); }
+  catch(e){ throw new Error(explainOllamaFailure(null, res, text)); }
+  return (data.message && data.message.content) || '(empty reply)';
+}
+
+let jarvisHistory = [];   // running conversation, so follow-up questions work
+function clearJarvisChat(){
+  jarvisHistory = [];
+  document.getElementById('localAiLog').innerHTML =
+    `<div class="ai-msg"><div class="ai-avatar bot">J</div><div><div class="ai-bubble">Cleared. Ask me about your grades, assignments, attendance or email.</div></div></div>`;
+}
+
 async function askLocalAI(){
   const input = document.getElementById('localAiInput');
   const log = document.getElementById('localAiLog');
@@ -2540,23 +2825,19 @@ async function askLocalAI(){
     log.scrollTop = log.scrollHeight;
   };
 
+  jarvisHistory.push({ role:'user', content:q });
+  // Only the last few turns are replayed, so a long chat doesn't crowd out the data.
+  const recent = jarvisHistory.slice(-8);
   try{
-    const res = await fetch(`${ollamaUrl}/api/generate`, {
-      method:'POST',
-      headers: ollamaHeaders(),
-      body: JSON.stringify({ model: ollamaModel, prompt: q, stream:false })
-    });
-    const text = await res.text();
-    if(!res.ok){ setJarvisStatus('Not connected','bad'); reply(explainOllamaFailure(null, res, text)); return; }
-    let data;
-    try{ data = JSON.parse(text); }
-    catch(e){ setJarvisStatus('Not connected','bad'); reply(explainOllamaFailure(null, res, text)); return; }
+    const out = await jarvisChat([{ role:'system', content: jarvisSystemPrompt() }].concat(recent));
+    jarvisHistory.push({ role:'assistant', content: out });
     setJarvisStatus('Connected','ok');
-    reply(data.response || '(empty reply)');
+    reply(out);
   }catch(err){
     console.error('Jarvis request failed', err);
     setJarvisStatus('Not connected','bad');
-    reply(explainOllamaFailure(err));
+    jarvisHistory.pop();
+    reply(err.message || explainOllamaFailure(err));
   }
 }
 
@@ -2620,6 +2901,7 @@ function go(view){
 
 /* ===================== INIT ===================== */
 function initApp(){
+  hydrateData();
   rebuildEventCaches();
   seedConversations();
   renderDash();
