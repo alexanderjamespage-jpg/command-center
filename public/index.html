@@ -353,6 +353,7 @@ body{
 .cal-chip.purple{background:rgba(133,121,184,0.2);color:#b89bf5;}
 .cal-chip.blue{background:rgba(91,132,196,0.2);color:#8fb2e8;}
 .cal-chip.green{background:rgba(90,168,127,0.18);color:var(--green);}
+.cal-chip.orange{background:rgba(232,146,58,0.2);color:#e8923a;}
 .cal-more{font-size:9px;color:var(--dim);margin-top:3px;cursor:pointer;}
 
 /* Week / Day time grid */
@@ -665,10 +666,26 @@ body{
           </div>
           <div class="cal-layer-row">
             <label><input type="checkbox" id="layer-apple" onchange="toggleLayer('apple')"> 🍎 Apple Calendar</label>
-            <button class="cal-layer-connect" id="apple-connect-btn" onclick="connectAppleCalendar()">Connect</button>
+            <button class="cal-layer-connect" id="apple-connect-btn" onclick="connectIcsFeed('apple')">Connect</button>
+          </div>
+          <div class="cal-layer-row">
+            <label><input type="checkbox" id="layer-paradigm" onchange="toggleLayer('paradigm')"> 🎓 Paradigm</label>
+            <button class="cal-layer-connect" id="paradigm-connect-btn" onclick="connectIcsFeed('paradigm')">Connect</button>
+          </div>
+          <div class="cal-layer-row">
+            <button class="cal-layer-connect" onclick="toggleFeedSettings()">⚙ Feeds</button>
           </div>
         </div>
 
+        <div class="card" id="feedSettings" style="display:none;margin-bottom:14px;">
+          <h4 style="font-size:11px;letter-spacing:0.5px;color:var(--dim);text-transform:uppercase;margin-bottom:10px;">Calendar feed links</h4>
+          <div style="font-size:11.5px;color:var(--dim);margin-bottom:6px;">🍎 Apple Calendar — Calendar app → right-click your calendar → Share Calendar → Public Calendar → copy link</div>
+          <input class="ai-input" id="feedUrlApple" style="width:100%;margin-bottom:12px;" placeholder="webcal://p01-calendars.icloud.com/published/...">
+          <div style="font-size:11.5px;color:var(--dim);margin-bottom:6px;">🎓 Paradigm — the school's public .ics link, if they publish one</div>
+          <input class="ai-input" id="feedUrlParadigm" style="width:100%;margin-bottom:12px;" placeholder="https://calendar.google.com/calendar/ical/.../public/basic.ics">
+          <button class="btn-primary" onclick="saveFeedSettings()">Save &amp; connect</button>
+          <div style="font-size:11.5px;color:var(--dim);margin-top:12px;line-height:1.6;">Saved on this device only — never in the code or on GitHub. If the direct fetch is blocked, a public relay is used to read the file, so avoid pasting a calendar you'd mind a third party seeing.</div>
+        </div>
         <div class="cal-wrap"><div id="calBody"></div></div>
       </div>
 
@@ -1690,8 +1707,9 @@ function buildAttendanceEvents(){
 }
 let googleEvents = {};
 let appleEvents = {};
+let paradigmEvents = {};
 
-const calendarLayers = { school:true, attendance:true, google:false, apple:false };
+const calendarLayers = { school:true, attendance:true, google:false, apple:false, paradigm:false };
 try{ const saved = JSON.parse(localStorage.getItem('calendarLayers')); if(saved) Object.assign(calendarLayers, saved); }catch(e){}
 function saveCalendarLayers(){ try{ localStorage.setItem('calendarLayers', JSON.stringify(calendarLayers)); }catch(e){} }
 function toggleLayer(name){
@@ -1700,10 +1718,17 @@ function toggleLayer(name){
   renderCalendar();
 }
 function initLayerCheckboxes(){
-  ['school','attendance','google','apple'].forEach(n=>{
+  ['school','attendance','google','apple','paradigm'].forEach(n=>{
     const el = document.getElementById('layer-'+n);
     if(el) el.checked = calendarLayers[n];
   });
+}
+/* A Google calendar's own colour, when we have it. */
+function chipStyle(e){
+  if(!e.hex) return '';
+  const n = e.hex.replace('#','');
+  const r = parseInt(n.slice(0,2),16), g = parseInt(n.slice(2,4),16), b = parseInt(n.slice(4,6),16);
+  return `style="background:rgba(${r},${g},${b},0.22);color:${e.hex};"`;
 }
 function eventsOn(dateKey){
   let out = [];
@@ -1711,6 +1736,7 @@ function eventsOn(dateKey){
   if(calendarLayers.attendance) out = out.concat(buildAttendanceEventsCache[dateKey] || []);
   if(calendarLayers.google) out = out.concat(googleEvents[dateKey] || []);
   if(calendarLayers.apple) out = out.concat(appleEvents[dateKey] || []);
+  if(calendarLayers.paradigm) out = out.concat(paradigmEvents[dateKey] || []);
   return out;
 }
 let buildSchoolEventsCache = {};
@@ -1769,7 +1795,7 @@ function monthHTML(){
     const extra = evs.length - shown.length;
     html += `<div class="cal-day ${out?'out':''} ${past?'past':''} ${sameDay(d,TODAY)?'today':''}" onclick="openDayView('${dk(d)}')">
       <div class="dnum">${d.getDate()}</div>
-      ${shown.map((e,ei)=>`<span class="cal-chip ${e.color}" onclick="event.stopPropagation(); openEvent('${dk(d)}',${evs.indexOf(e)})">${e.t}</span>`).join('')}
+      ${shown.map(e=>`<span class="cal-chip ${e.color}" ${chipStyle(e)} onclick="event.stopPropagation(); openEvent('${dk(d)}',${evs.indexOf(e)})">${e.t}</span>`).join('')}
       ${extra>0 ? `<div class="cal-more" onclick="event.stopPropagation(); openDayModal('${dk(d)}')">+${extra} more</div>` : ''}
     </div>`;
   }
@@ -1790,7 +1816,7 @@ function timeGridHTML(startDate, cols){
     const evs = eventsOn(dk(d));
     const past = d < TODAY && !sameDay(d,TODAY);
     return `<div class="tg-allday-col ${past?'past':''}">` +
-      evs.filter(e=>e.allDay!==false).map(e=>`<span class="cal-chip ${e.color}" onclick="openEvent('${dk(d)}',${evs.indexOf(e)})">${e.t}</span>`).join('') +
+      evs.filter(e=>e.allDay!==false).map(e=>`<span class="cal-chip ${e.color}" ${chipStyle(e)} onclick="openEvent('${dk(d)}',${evs.indexOf(e)})">${e.t}</span>`).join('') +
       `</div>`;
   }).join('') + `</div>`;
 
@@ -1894,37 +1920,67 @@ function visibleRange(){
 async function fetchGoogleCalendarEvents(){
   const btn = document.getElementById('google-connect-btn');
   if(btn) btn.textContent = 'Loading…';
-  const [s,e] = visibleRange();
+  const [rangeStart, rangeEnd] = visibleRange();
+  const headers = { Authorization:`Bearer ${googleAccessToken}` };
+
   try{
-    const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${s.toISOString()}&timeMax=${e.toISOString()}&singleEvents=true&orderBy=startTime`,
-      { headers:{ Authorization:`Bearer ${googleAccessToken}` } });
-    if(!res.ok) throw new Error('Calendar API error: '+res.status);
-    const data = await res.json();
+    // Every calendar you can read, not just your own — so a school calendar
+    // you've subscribed to shows up here too, in its own colour.
+    const listRes = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=reader', {headers});
+    if(!listRes.ok) throw new Error('Calendar list error: '+listRes.status);
+    const cals = ((await listRes.json()).items || [])
+      .filter(c=>c.selected !== false)
+      .slice(0, 12);
+
     googleEvents = {};
-    (data.items || []).forEach(ev=>{
-      const startStr = ev.start && (ev.start.dateTime || ev.start.date);
-      if(!startStr) return;
-      const timed = !!(ev.start && ev.start.dateTime);
-      const sd = new Date(startStr);
-      const key = timed ? dk(sd) : startStr;
-      const item = { t: ev.summary || '(untitled event)', sub:'Google Calendar', color:'blue', allDay:!timed, kind:'google' };
-      if(timed){
-        const ed = ev.end && ev.end.dateTime ? new Date(ev.end.dateTime) : new Date(sd.getTime()+3600000);
-        item.startMin = sd.getHours()*60 + sd.getMinutes();
-        item.endMin = Math.max(item.startMin+30, ed.getHours()*60 + ed.getMinutes());
-      }
-      (googleEvents[key] = googleEvents[key] || []).push(item);
-    });
-    calendarLayers.google = true; saveCalendarLayers();
-    const cb = document.getElementById('layer-google'); if(cb) cb.checked = true;
-    if(btn){ btn.textContent = 'Connected ✓'; btn.disabled = true; }
+    let total = 0;
+
+    await Promise.all(cals.map(async cal=>{
+      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events`
+        + `?timeMin=${rangeStart.toISOString()}&timeMax=${rangeEnd.toISOString()}`
+        + `&singleEvents=true&orderBy=startTime&maxResults=250`;
+      const res = await fetch(url, {headers});
+      if(!res.ok) return;                      // a calendar we can't read: skip it
+      const data = await res.json();
+
+      (data.items || []).forEach(ev=>{
+        const startStr = ev.start && (ev.start.dateTime || ev.start.date);
+        if(!startStr) return;
+        const timed = !!(ev.start && ev.start.dateTime);
+        const sd = new Date(startStr);
+        const key = timed ? dk(sd) : startStr;
+
+        const item = {
+          t: ev.summary || '(untitled event)',
+          sub: cal.summary || 'Google Calendar',
+          color: 'blue',
+          hex: cal.backgroundColor || null,     // use the calendar's own colour
+          allDay: !timed,
+          kind: 'google'
+        };
+        if(timed){
+          const ed = ev.end && ev.end.dateTime ? new Date(ev.end.dateTime) : new Date(sd.getTime()+3600000);
+          item.startMin = sd.getHours()*60 + sd.getMinutes();
+          item.endMin = Math.max(item.startMin+30, ed.getHours()*60 + ed.getMinutes());
+        }
+        (googleEvents[key] = googleEvents[key] || []).push(item);
+        total++;
+      });
+    }));
+
+    calendarLayers.google = true;
+    saveCalendarLayers();
+    const cb = document.getElementById('layer-google');
+    if(cb) cb.checked = true;
+    if(btn) btn.textContent = `${cals.length} calendar${cals.length===1?'':'s'} ✓`;
     renderCalendar();
   }catch(err){
     console.error(err);
     if(btn) btn.textContent = 'Retry';
-    alert("Couldn't load your Google Calendar events. Check that the Calendar API is enabled and this site's URL is an Authorized JavaScript origin, then try again.");
+    alert("Couldn't load your Google Calendars: " + err.message + "\n\nCheck the Calendar API is enabled and this site's URL is an Authorized JavaScript origin.");
   }
 }
+
 function connectGoogleCalendar(){
   if(typeof google === 'undefined' || !google.accounts){
     alert("Google's sign-in script hasn't loaded yet — check your connection and try again in a moment.");
@@ -1935,23 +1991,199 @@ function connectGoogleCalendar(){
   else googleTokenClient.requestAccessToken();
 }
 
-/* ---- APPLE CALENDAR (.ics through your own /api/calendar-feed proxy) ---- */
-async function connectAppleCalendar(){
-  const btn = document.getElementById('apple-connect-btn');
+/* =====================================================================
+   .ics FEEDS (Apple Calendar + Paradigm) — parsed right here in the page.
+
+   Calendar servers don't send CORS headers, so the browser can't just
+   fetch an .ics file. We try three routes in order:
+     1. /api/calendar-feed  — your own serverless function, if you added it
+     2. a direct fetch      — works for the rare feed that allows it
+     3. a public CORS relay — no setup, but a third party sees the request
+   Feed URLs are typed into the ⚙ Feeds panel and saved on this device only,
+   so they never end up in the code or on GitHub.
+   ===================================================================== */
+const ICS_SOURCES = {
+  apple:    { label:'Apple Calendar', color:'green',  store:d=>{ appleEvents = d; } },
+  paradigm: { label:'Paradigm',       color:'orange', store:d=>{ paradigmEvents = d; } }
+};
+const CORS_RELAYS = [
+  u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+  u => 'https://corsproxy.io/?url=' + encodeURIComponent(u)
+];
+
+let icsFeedUrls = { apple:'', paradigm:'' };
+try{ Object.assign(icsFeedUrls, JSON.parse(localStorage.getItem('icsFeedUrls') || '{}')); }catch(e){}
+
+function toggleFeedSettings(){
+  const el = document.getElementById('feedSettings');
+  const showing = el.style.display !== 'none';
+  el.style.display = showing ? 'none' : '';
+  if(!showing){
+    document.getElementById('feedUrlApple').value = icsFeedUrls.apple || '';
+    document.getElementById('feedUrlParadigm').value = icsFeedUrls.paradigm || '';
+  }
+}
+function saveFeedSettings(){
+  icsFeedUrls.apple = document.getElementById('feedUrlApple').value.trim();
+  icsFeedUrls.paradigm = document.getElementById('feedUrlParadigm').value.trim();
+  try{ localStorage.setItem('icsFeedUrls', JSON.stringify(icsFeedUrls)); }catch(e){}
+  document.getElementById('feedSettings').style.display = 'none';
+  ['apple','paradigm'].forEach(s=>{ if(icsFeedUrls[s]) connectIcsFeed(s); });
+}
+
+/* Grabs the raw .ics text, trying each route until one works. */
+async function fetchIcsText(source){
+  const attempts = [];
+  const userUrl = (icsFeedUrls[source] || '').trim().replace(/^webcal:\/\//i, 'https://');
+
+  attempts.push(async ()=>{
+    const r = await fetch(`/api/calendar-feed?source=${source}&raw=1`);
+    if(!r.ok) throw new Error('no serverless function');
+    const t = await r.text();
+    if(!/BEGIN:VCALENDAR/i.test(t)) throw new Error('not a calendar');
+    return t;
+  });
+
+  if(userUrl){
+    attempts.push(async ()=>{
+      const r = await fetch(userUrl);
+      if(!r.ok) throw new Error('direct fetch ' + r.status);
+      return r.text();
+    });
+    CORS_RELAYS.forEach(build=>{
+      attempts.push(async ()=>{
+        const r = await fetch(build(userUrl));
+        if(!r.ok) throw new Error('relay ' + r.status);
+        return r.text();
+      });
+    });
+  }
+
+  let lastErr = 'no route worked';
+  for(const attempt of attempts){
+    try{
+      const text = await attempt();
+      if(/BEGIN:VCALENDAR/i.test(text)) return text;
+      lastErr = 'that URL returned a web page, not a calendar file';
+    }catch(e){ lastErr = e.message; }
+  }
+  throw new Error(userUrl
+    ? `Couldn't load that feed (${lastErr}). Check the link is the .ics share URL and is still shared publicly.`
+    : 'No feed URL set — click ⚙ Feeds and paste the calendar\'s .ics link.');
+}
+
+/* ---- ICS parsing ---- */
+function icsUnfold(t){ return t.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n[ \t]/g,''); }
+function icsUnescape(s){
+  return String(s||'').replace(/\\n/gi,' ').replace(/\\,/g,',').replace(/\\;/g,';').replace(/\\\\/g,'\\').trim();
+}
+function icsDate(value, params){
+  if(/VALUE=DATE/i.test(params||'') || /^\d{8}$/.test(value)){
+    return { date:new Date(+value.slice(0,4), +value.slice(4,6)-1, +value.slice(6,8)), allDay:true };
+  }
+  const m = value.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z)?$/);
+  if(!m) return null;
+  const d = m[7]
+    ? new Date(Date.UTC(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +m[6]))
+    : new Date(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +m[6]);
+  return { date:d, allDay:false };
+}
+/* Repeating events — a weekly late start should land on every week. */
+function icsRepeat(rrule, start, from, to){
+  const R = {};
+  rrule.split(';').forEach(p=>{ const [k,v] = p.split('='); if(k) R[k.toUpperCase()] = v; });
+  const freq = (R.FREQ||'').toUpperCase();
+  if(!freq) return [];
+  const step = parseInt(R.INTERVAL||'1',10) || 1;
+  const count = R.COUNT ? parseInt(R.COUNT,10) : null;
+  let until = to;
+  if(R.UNTIL){ const u = icsDate(R.UNTIL.replace(/[^0-9TZ]/g,''), ''); if(u && u.date < to) until = u.date; }
+  const DAYS = {SU:0,MO:1,TU:2,WE:3,TH:4,FR:5,SA:6};
+  const byDay = R.BYDAY ? R.BYDAY.split(',').map(d=>DAYS[d.replace(/^[-+]?\d/,'').toUpperCase()]).filter(n=>n!==undefined) : null;
+  const out = [], cur = new Date(start);
+  let made = 0, guard = 0;
+  while(cur <= until && guard++ < 1500){
+    if(count && made >= count) break;
+    if(freq==='WEEKLY' && byDay && byDay.length){
+      const wk = new Date(cur); wk.setDate(wk.getDate() - wk.getDay());
+      byDay.forEach(dow=>{
+        const o = new Date(wk); o.setDate(wk.getDate()+dow);
+        o.setHours(start.getHours(), start.getMinutes(), 0, 0);
+        if(o > start && o >= from && o <= until){ out.push(new Date(o)); made++; }
+      });
+    } else if(cur > start && cur >= from){ out.push(new Date(cur)); made++; }
+    if(freq==='DAILY') cur.setDate(cur.getDate()+step);
+    else if(freq==='WEEKLY') cur.setDate(cur.getDate()+7*step);
+    else if(freq==='MONTHLY') cur.setMonth(cur.getMonth()+step);
+    else if(freq==='YEARLY') cur.setFullYear(cur.getFullYear()+step);
+    else break;
+  }
+  return out;
+}
+function parseIcs(raw, color, kind){
+  const lines = icsUnfold(raw).split('\n');
+  const byDate = {};
+  const now = new Date();
+  const from = new Date(now); from.setDate(now.getDate()-60);
+  const to = new Date(now); to.setDate(now.getDate()+400);
+  let cur = null, total = 0;
+
+  const add = (when, ev)=>{
+    if(when < from || when > to) return;
+    const key = dk(when);
+    byDate[key] = byDate[key] || [];
+    if(byDate[key].length >= 12) return;
+    const item = { t: ev.summary || '(untitled)', allDay: ev.allDay, color, kind, sub: ev.location || '' };
+    if(!ev.allDay){
+      item.startMin = when.getHours()*60 + when.getMinutes();
+      item.endMin = Math.min(1440, item.startMin + (ev.dur || 60));
+    }
+    byDate[key].push(item);
+    total++;
+  };
+
+  for(const line of lines){
+    if(/^BEGIN:VEVENT/i.test(line)){ cur = {}; continue; }
+    if(/^END:VEVENT/i.test(line)){
+      if(cur && cur.start){
+        add(cur.start, cur);
+        if(cur.rrule) icsRepeat(cur.rrule, cur.start, from, to).forEach(d=>add(d, cur));
+      }
+      cur = null; continue;
+    }
+    if(!cur) continue;
+    const i = line.indexOf(':');
+    if(i < 0) continue;
+    const rawKey = line.slice(0,i), value = line.slice(i+1);
+    const parts = rawKey.split(';'), key = parts[0].toUpperCase(), params = parts.slice(1).join(';');
+    if(key==='SUMMARY') cur.summary = icsUnescape(value);
+    else if(key==='LOCATION') cur.location = icsUnescape(value);
+    else if(key==='RRULE') cur.rrule = value;
+    else if(key==='DTSTART'){ const p = icsDate(value, params); if(p){ cur.start = p.date; cur.allDay = p.allDay; } }
+    else if(key==='DTEND'){ const p = icsDate(value, params); if(p && cur.start) cur.dur = Math.max(30, Math.round((p.date - cur.start)/60000)); }
+  }
+  return { events: byDate, total };
+}
+
+async function connectIcsFeed(source){
+  const cfg = ICS_SOURCES[source];
+  if(!cfg) return;
+  const btn = document.getElementById(source+'-connect-btn');
   if(btn) btn.textContent = 'Loading…';
   try{
-    const res = await fetch('/api/calendar-feed?source=apple');
-    const data = await res.json();
-    if(!res.ok) throw new Error(data.error || ('Feed fetch failed: '+res.status));
-    appleEvents = data;
-    calendarLayers.apple = true; saveCalendarLayers();
-    const cb = document.getElementById('layer-apple'); if(cb) cb.checked = true;
-    if(btn){ btn.textContent = 'Connected ✓'; btn.disabled = true; }
+    const text = await fetchIcsText(source);
+    const { events, total } = parseIcs(text, cfg.color, source);
+    cfg.store(events);
+    calendarLayers[source] = true;
+    saveCalendarLayers();
+    const cb = document.getElementById('layer-'+source);
+    if(cb) cb.checked = true;
+    if(btn) btn.textContent = `${total} events ✓`;
     renderCalendar();
   }catch(e){
     console.error(e);
     if(btn) btn.textContent = 'Retry';
-    alert("Couldn't load that calendar feed: " + e.message);
+    alert(`${cfg.label}: ${e.message}`);
   }
 }
 
