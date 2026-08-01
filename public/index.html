@@ -2072,6 +2072,7 @@ function initGoogleTokenClient(){
     client_id: GOOGLE_CLIENT_ID,
     scope: GOOGLE_CALENDAR_SCOPE,
     callback: (t)=>{ if(t && t.access_token){ googleAccessToken = t.access_token; fetchGoogleCalendarEvents(); } },
+    error_callback: (err)=>googleAuthProblem(err, 'Calendar')
   });
 }
 function visibleRange(){
@@ -2145,8 +2146,10 @@ function connectGoogleCalendar(){
     return;
   }
   initGoogleTokenClient();
-  if(googleAccessToken) fetchGoogleCalendarEvents();
-  else googleTokenClient.requestAccessToken();
+  try{
+    if(googleAccessToken) fetchGoogleCalendarEvents();
+    else googleTokenClient.requestAccessToken();
+  }catch(e){ googleAuthProblem(e, 'Calendar'); }
 }
 
 /* =====================================================================
@@ -2666,6 +2669,47 @@ const ADMIN_SENDER_HINTS = ['noreply','no-reply','donotreply','infinitecampus','
 let gmailTokenClient = null;
 let gmailAccounts = [];   // [{id, email, token, color, error}]
 let gmailLoading = false;
+/* ---- connecting accounts ---- */
+function googleAuthProblem(err, which){
+  const origin = window.location.origin;
+  const detail = (err && (err.type || err.message)) || 'unknown';
+  let msg;
+  if(detail === 'popup_failed_to_open'){
+    msg = "Your browser blocked the Google sign-in window.\n\nLook for a blocked-popup icon in the address bar, allow popups for this site, then try again.";
+  } else if(detail === 'popup_closed'){
+    msg = 'The sign-in window closed before finishing. Try again and complete the steps.';
+  } else {
+    msg = `Google wouldn't open the sign-in window.\n\nThis page's address is:\n${origin}\n\n`
+        + `That exact address has to be listed under Authorized JavaScript origins for the ${which} client ID `
+        + `in Google Cloud Console (APIs & Services → Credentials). No trailing slash, no path.\n\n`
+        + `Open DevTools → Console for Google's own wording.`;
+  }
+  console.error('Google auth problem (' + which + '):', err, 'origin:', origin);
+  alert(msg);
+}
+
+function connectGmail(){
+  if(typeof google === 'undefined' || !google.accounts){
+    alert("Google's sign-in script hasn't loaded.\n\nAn ad blocker or strict privacy setting may be blocking accounts.google.com. Allow it for this site and reload.");
+    return;
+  }
+  if(location.protocol === 'file:'){
+    alert("Google sign-in can't run on a file:// page. Open the site through your Vercel URL instead.");
+    return;
+  }
+  if(!gmailTokenClient){
+    gmailTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GMAIL_CLIENT_ID,
+      scope: GMAIL_SCOPE,
+      callback: (t)=>{ if(t && t.access_token) registerGmailAccount(t.access_token); },
+      error_callback: (err)=>googleAuthProblem(err, 'Gmail')
+    });
+  }
+  // 'select_account' shows the chooser every time, which is how you add a second inbox.
+  try{ gmailTokenClient.requestAccessToken({ prompt:'select_account' }); }
+  catch(e){ googleAuthProblem(e, 'Gmail'); }
+}
+
 async function registerGmailAccount(token){
   try{
     const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
