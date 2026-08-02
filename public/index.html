@@ -474,6 +474,14 @@ body{
 .inbox-subject{font-size:12px;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .unread-dot{width:7px;height:7px;border-radius:50%;background:var(--blue);flex-shrink:0;align-self:center;}
 
+/* COLLAPSIBLE PLAN CARD */
+.collapse-btn{background:none;border:none;color:var(--dim);cursor:pointer;font-size:11px;
+  margin-left:auto;display:flex;align-items:center;gap:6px;font-weight:600;}
+.collapse-btn:hover{color:var(--text);}
+.collapse-btn .cv{display:inline-block;transition:transform .15s;}
+.is-collapsed .collapse-btn .cv{transform:rotate(-90deg);}
+.is-collapsed .collapse-body{display:none;}
+
 /* WORKSPACE SMART BOXES */
 .embed-wrap{position:relative;width:100%;padding-top:56.25%;border-radius:14px;overflow:hidden;
   background:#000;border:1px solid var(--border);margin-bottom:10px;}
@@ -595,7 +603,57 @@ body{
 .email-body{font-size:13px;line-height:1.7;white-space:pre-wrap;word-break:break-word;}
 .email-loading{color:var(--dim);font-size:13px;padding:22px 0;}
 
+/* ============ TEXT WRAPPING ============
+   Long words, URLs and email addresses were pushing layouts wider than the
+   screen on iPhone. Anything that holds real prose gets to break mid-word;
+   flex children get min-width:0 so they can actually shrink. */
+body{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+.email-body,.ai-bubble,.modal-req,.cd-acc-req,.ws-summary-body,.alert-item,
+.we-subj,.inbox-snippet,.link-card .lu,.note-item,.changelog-text,
+.ws-empty,.ai-grade-note,.side-note,.att-row-reason,.cs-next,.ws-chat-empty{
+  overflow-wrap:anywhere;word-break:break-word;}
+.cs-left>div,.cd-acc-left,.inbox-body,.link-card .lb,.ws-pick-left>div,
+.att-row-left,.att-row-left>div,.update-source-left,.we-top,.split-main,
+.class-summary-row,.ws-email{min-width:0;}
+.link-card .lu{white-space:normal;}
+.modal-box{overflow-wrap:anywhere;}
+
+/* ============ LARGE SCREENS ============
+   Fill the display instead of leaving a narrow column down the middle. */
+@media (min-width:1400px){
+  .content{padding:26px 34px;}
+  .ws-grid{grid-template-columns:repeat(3,1fr);}
+  .class-grid{grid-template-columns:repeat(4,1fr);}
+  .cal-day{min-height:118px;}
+  .cal-year{grid-template-columns:repeat(6,1fr);}
+  .tg-scroll{max-height:560px;}
+  .modal-box{width:620px;}
+  .doc-embed{height:540px;}
+  .ai-shell{height:calc(100vh - 150px);max-height:none;}
+  .ws-chat-log{max-height:420px;}
+  .att-main{flex:3 1 560px;}
+  .dash-flex-side{flex:1 1 320px;}
+}
+@media (min-width:1800px){
+  .content{padding:30px 52px;}
+  .class-grid{grid-template-columns:repeat(5,1fr);}
+  .cal-day{min-height:140px;}
+  .sidebar{width:96px;}
+  .nav-item{width:72px;font-size:10px;}
+  .nav-item .ic svg{width:21px;height:21px;}
+  .modal-box{width:700px;}
+  .section-title{font-size:17px;}
+}
+
 /* ============ RESPONSIVE ============ */
+/* iPad — two columns of classes, roomier tap targets, no cramped rows */
+@media (min-width:681px) and (max-width:1024px){
+  .ws-grid{grid-template-columns:1fr 1fr;}
+  .cd-acc-head,.class-summary-row,.att-row{gap:10px;}
+  .detail-banner,.ws-header,.att-detail-banner{padding:18px 20px;}
+  .doc-embed{height:360px;}
+}
+
 @media (max-width:1024px){
   .class-grid{grid-template-columns:repeat(2,1fr);}
   .content{padding:18px;}
@@ -608,18 +666,47 @@ body{
     width:calc(100% - 24px);max-width:520px;height:auto;flex-direction:row;justify-content:flex-start;
     border:1px solid rgba(255,255,255,0.14);border-radius:26px;background:rgba(20,22,32,0.55);
     box-shadow:0 10px 34px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.09);
-    padding:6px 5px;gap:2px;overflow-x:auto;z-index:100;
-  }
+    padding:6px 5px;gap:2px;overflow-x:auto;z-index:100;}
   .nav-item{flex-direction:column;width:auto;min-width:52px;padding:6px 4px;font-size:8.3px;flex-shrink:0;}
   .nav-item .ic svg{width:18px;height:18px;}
   .nav-spacer{display:none;}
   .main{min-height:0;}
   .topbar{height:50px;padding:0 14px;}
-  .topbar .title{font-size:14px;}
+  .topbar .title{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .content{padding:14px;padding-bottom:100px;}
+
+  /* iOS zooms the page when you focus an input under 16px */
+  .ai-input,.note-input,input,textarea,select{font-size:16px;}
+
   .class-grid{grid-template-columns:1fr;gap:12px;}
+  .ws-grid{grid-template-columns:1fr;}
+
+  /* Let cramped rows wrap onto a second line instead of squeezing */
+  .class-summary-row{flex-wrap:wrap;gap:8px;}
+  .cs-right{width:100%;justify-content:space-between;}
+  .cs-dropdown-inner{padding-left:14px;}
+  .cs-assignment-row{flex-wrap:wrap;gap:2px;}
+  .cs-assignment-row .due{width:100%;}
+  .cd-acc-head{flex-wrap:wrap;gap:6px;}
+  .cd-acc-right{width:100%;justify-content:flex-start;}
+  .cd-acc-name{white-space:normal;}
+  .status-tag{margin-left:0;}
+  .att-row{flex-wrap:wrap;gap:8px;}
+  .att-row-right{width:100%;justify-content:flex-start;}
+  .ws-email .we-top{flex-wrap:wrap;gap:2px;}
+  .ws-email .we-date{width:100%;}
+  .ws-ref-row,.att-breakdown-row,.turnin-file,.changelog-item{flex-wrap:wrap;gap:4px;}
+  .inbox-top{flex-wrap:wrap;gap:2px;}
+  .inbox-date{width:100%;}
+  .update-source-row{flex-wrap:wrap;gap:10px;}
+  .type-row{flex-direction:column;}
+  .ws-cal-row{flex-wrap:wrap;}
+  .att-fact-grid{grid-template-columns:1fr 1fr;}
+
   .detail-banner,.ws-header,.att-detail-banner{flex-wrap:wrap;gap:14px;padding:16px 18px;}
   .detail-banner .left,.ws-header .left{flex:1 1 100%;}
+  .detail-banner h2,.ws-header h2,.att-detail-banner h2{font-size:17px;}
+
   .cal-day{min-height:62px;padding:4px;}
   .cal-day .dnum{font-size:10px;width:19px;height:19px;}
   .cal-chip{font-size:8px;padding:1px 3px;}
@@ -627,19 +714,26 @@ body{
   .cal-seg button{padding:5px 9px;font-size:11px;}
   .cal-year{grid-template-columns:repeat(2,1fr);}
   .tg-scroll{max-height:320px;}
+  .cal-toolbar{gap:8px;}
+
   .ai-shell{flex-direction:column;height:calc(100dvh - 200px);}
-  .ai-shell-side{width:100%;flex-direction:row;overflow-x:auto;overflow-y:hidden;align-items:stretch;padding:8px;gap:8px;}
-  .ai-side-head{display:none;}
-  .ai-newchat{margin-bottom:0;white-space:nowrap;flex-shrink:0;}
-  .ai-conv-list{flex-direction:row;overflow-x:auto;overflow-y:hidden;gap:8px;}
-  .ai-conv{flex-shrink:0;max-width:170px;}
+  .ai-msg{max-width:96%;}
+  .email-tab{max-width:60vw;}
+  .doc-embed{height:260px;}
   .modal-box{padding:18px;width:94vw;}
   .grade-stack .gs-pct{font-size:15px;}
+  .section-title{font-size:15px;}
 }
+
 @media (max-width:380px){
   .nav-item{min-width:46px;font-size:7.6px;}
   .section-title{font-size:14px;}
   .class-banner .cname{font-size:12.5px;}
+  .content{padding:11px;padding-bottom:96px;}
+  .card,.ws-card,.att-side-card{padding:14px;}
+  .att-fact-grid{grid-template-columns:1fr;}
+  .cal-day{min-height:54px;}
+  .email-subject{font-size:16px;}
 }
 </style>
 </head>
@@ -915,6 +1009,22 @@ body{
           </div>
           <button class="sync-btn-all" onclick="syncSource('all')">🔄 Sync Everything Now</button>
         </div>
+        <div class="section-title" style="font-size:13px;">Reference library</div>
+        <div class="cal-slider" id="refScopeSlider"></div>
+        <div class="card" style="margin-bottom:16px;">
+          <div id="refScopeNote" style="font-size:12.5px;color:var(--dim);line-height:1.6;margin-bottom:12px;"></div>
+          <div id="refList"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+            <button class="cal-add-btn" onclick="toggleWsForm('refForm')">＋ Add text or link</button>
+            <button class="cal-add-btn" onclick="triggerRefUpload()">⬆ Upload a file</button>
+          </div>
+          <div id="refForm" style="display:none;margin-top:12px;">
+            <input class="ai-input" id="refTitle" style="width:100%;margin-bottom:8px;" placeholder="Title — “Syllabus”, “Late work policy”, “Student handbook”">
+            <textarea class="note-input" id="refBody" style="margin-bottom:8px;min-height:110px;" placeholder="Paste the text, or a link"></textarea>
+            <button class="btn-primary" onclick="addReference()">Save reference</button>
+          </div>
+        </div>
+
         <div class="section-title" style="font-size:13px;">What's New</div>
         <div class="card" id="changelogCard"></div>
       </div>
@@ -959,6 +1069,7 @@ body{
 </div>
 
 <input type="file" id="globalFileInput" style="display:none;">
+<input type="file" id="refFileInput" style="display:none;" accept=".txt,.md,.csv,.html,.rtf,.json,.pdf,.doc,.docx">
 
 <script>
 /* =====================================================================
@@ -1556,8 +1667,12 @@ function openAssignment(classId, list, idx){
 
   // The plan writes itself here too, with the same two buttons.
   const planCard = document.getElementById('m-plan-card');
+  planCard.className = 'card' + (planCollapsed ? ' is-collapsed' : '');
   planCard.innerHTML = `
-    <h4 style="font-size:11px;letter-spacing:0.5px;color:var(--dim);text-transform:uppercase;margin-bottom:10px;">✦ How to complete this</h4>
+    <h4 style="font-size:11px;letter-spacing:0.5px;color:var(--dim);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;">✦ How to complete this
+      <button class="collapse-btn" onclick="togglePlanCollapse()"><span class="cv">▾</span><span>${planCollapsed?'Show':'Hide'}</span></button>
+    </h4>
+    <div class="collapse-body">
     <div id="apAiOut" style="font-size:13px;line-height:1.65;">
       ${a.plan
         ? `<div style="white-space:pre-wrap;">${escapeHtml(a.plan)}</div>`
@@ -1566,6 +1681,7 @@ function openAssignment(classId, list, idx){
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;">
       <button class="workspace-btn" style="margin:0;" onclick="workspaceAsk('${classId}', ${idx}, '${list}', false, 'apAiOut')">✦ Ask Jarvis for a real plan</button>
       <button class="workspace-btn" style="margin:0;" onclick="workspaceAsk('${classId}', ${idx}, '${list}', true, 'apAiOut')">↻ Ask Jarvis again</button>
+    </div>
     </div>`;
   if(!a.plan) workspaceAsk(classId, idx, list, false, 'apAiOut');
 
@@ -1753,6 +1869,19 @@ function findAlerts(a, c, related){
    AI WORKSPACE
    --------------------------------------------------------------- */
 let wsChats = {};   // "classId:list:idx" -> [{r, t}]
+
+/* The plan card remembers whether you left it open or shut. */
+let planCollapsed = false;
+try{ planCollapsed = localStorage.getItem('planCollapsed') === '1'; }catch(e){}
+function togglePlanCollapse(){
+  planCollapsed = !planCollapsed;
+  try{ localStorage.setItem('planCollapsed', planCollapsed ? '1' : '0'); }catch(e){}
+  document.querySelectorAll('#wsPlanCard, #m-plan-card').forEach(el=>{
+    el.classList.toggle('is-collapsed', planCollapsed);
+    const lbl = el.querySelector('.collapse-btn span:last-child');
+    if(lbl) lbl.textContent = planCollapsed ? 'Show' : 'Hide';
+  });
+}
 function wsKey(classId, idx, list){ return classId + ':' + (list||'upcoming') + ':' + idx; }
 function wsItem(classId, idx, list){ return classes[classId][list || 'upcoming'][idx]; }
 
@@ -1836,7 +1965,7 @@ async function wsGradeReview(classId, idx, list){
 
   try{
     const out = await jarvisChat([
-      { role:'system', content: jarvisSystemPrompt(focus) },
+      { role:'system', content: jarvisSystemPrompt(focus, classId) },
       { role:'user', content: ask }
     ], { temperature:0.4 });
     a.review = out;
@@ -1893,7 +2022,7 @@ async function generatePlan(classId, idx, list){
     `Related emails: ${related.length ? related.map(m=>m.s + ' — ' + m.subj).join(' | ') : 'none'}`;
 
   const out = await jarvisChat([
-    { role:'system', content: jarvisSystemPrompt(focus) },
+    { role:'system', content: jarvisSystemPrompt(focus, classId) },
     { role:'user', content:
         `Walk me through finishing "${a.name}" properly. Number the main stages, and under each one give the specific sub-steps, what I need in front of me, roughly how long it takes, and how I know that stage is done. ` +
         `Finish with a short checklist to run against the requirements before turning it in. Be concrete about this assignment, not generic study advice.` }
@@ -2026,8 +2155,11 @@ function openWorkspace(classId, idx, list){
     </div>
 
     <!-- PLAN -->
-    <div class="ws-summary">
-      <h4>✦ How to complete this</h4>
+    <div class="ws-summary ${planCollapsed?'is-collapsed':''}" id="wsPlanCard">
+      <h4>✦ How to complete this
+        <button class="collapse-btn" onclick="togglePlanCollapse()"><span class="cv">▾</span><span>${planCollapsed?'Show':'Hide'}</span></button>
+      </h4>
+      <div class="collapse-body">
       <div class="ws-summary-body" id="wsAiOut">
         ${a.plan
           ? `<div style="white-space:pre-wrap;">${escapeHtml(a.plan)}</div>${a.studyTime ? `<div class="ws-time-pill">⏱ ${a.studyTime}</div>` : ''}`
@@ -2036,6 +2168,7 @@ function openWorkspace(classId, idx, list){
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;">
         <button class="workspace-btn" style="margin:0;" onclick="workspaceAsk('${classId}', ${idx}, '${list}')">✦ Ask Jarvis for a real plan</button>
         <button class="workspace-btn" style="margin:0;" onclick="workspaceAsk('${classId}', ${idx}, '${list}', true)">↻ Ask Jarvis again</button>
+      </div>
       </div>
     </div>
 
@@ -2147,6 +2280,19 @@ function openWorkspace(classId, idx, list){
         <div class="ws-empty" style="margin-top:10px;">Drafts get the same review as the final — upload one and hit “Get estimate &amp; feedback” above to see what to fix before it counts.</div>
       </div>
 
+      <!-- REFERENCE -->
+      <div class="ws-card span2">
+        <h4>📎 Reference material</h4>
+        ${(function(){ const list = references.filter(r=>r.scope==='school' || r.scope===classId); return list.length ? list.map(r=>`
+          <div class="ws-email">
+            <div class="we-top"><span class="we-sender">${r.kind==='link'?'🔗':'📝'} ${escapeHtml(r.title)}</span><span class="we-date">${escapeHtml(r.when)}</span></div>
+            <div class="we-subj" style="white-space:normal;">${r.kind==='link'
+              ? `<a href="${escapeHtml(r.body)}" target="_blank" style="color:var(--blue);">${escapeHtml(r.body)}</a>`
+              : escapeHtml(truncate(r.body, 160))}</div>
+          </div>`).join('') : '<div class="ws-empty">Nothing saved. Add the syllabus for this class, or school-wide policies, under Update → Reference library.</div>'; })()}
+        <button class="cal-add-btn" style="margin-top:12px;" onclick="go('update')">Manage reference library →</button>
+      </div>
+
       <!-- PAST ASSIGNMENTS -->
       <div class="ws-card span2">
         <h4>🗂 Past assignments in ${c.title}</h4>
@@ -2238,7 +2384,7 @@ async function wsAsk(classId, idx, list, preset){
     .map(m=>({ role: m.r==='you' ? 'user' : 'assistant', content: m.t }));
 
   try{
-    const out = await jarvisChat([{ role:'system', content: jarvisSystemPrompt(focus) }].concat(history), { temperature:0.5 });
+    const out = await jarvisChat([{ role:'system', content: jarvisSystemPrompt(focus, classId) }].concat(history), { temperature:0.5 });
     wsChats[key][wsChats[key].length-1] = { r:'bot', t:out };
   }catch(e){
     wsChats[key][wsChats[key].length-1] = { r:'bot', t: e.message };
@@ -3781,12 +3927,13 @@ function buildAppContext(){
   return L.join('\n');
 }
 
-function jarvisSystemPrompt(extra){
+function jarvisSystemPrompt(extra, focusClassId){
   let p = "You are Jarvis, a study assistant built into Alex's school dashboard. "
         + "Answer using the DATA below, and be specific — name real assignments, dates and numbers rather than talking in generalities. "
         + "Keep answers short unless asked for detail. If the data doesn't cover something, say so plainly instead of inventing it. "
         + "Values marked with a warning symbol are placeholders that haven't been filled in yet; treat them as unknown.";
   if(jarvisUseData) p += '\n\n=== DATA ===\n' + buildAppContext();
+  p += referenceContext(focusClassId);
   if(extra) p += '\n\n' + extra;
   return p;
 }
@@ -3851,6 +3998,128 @@ async function askLocalAI(){
   }
 }
 
+/* =====================================================================
+   REFERENCE LIBRARY — your own notes and rubrics, handed to Jarvis with
+   every question and shown in the AI Workspace.
+   ===================================================================== */
+let references = [];
+try{ references = JSON.parse(localStorage.getItem('references') || '[]'); }catch(e){}
+/* Older saves had no scope — treat those as school-wide. */
+references.forEach(r=>{ if(!r.scope) r.scope = 'school'; });
+
+let refScope = 'school';   // 'school' or a class id
+
+function saveReferences(){
+  try{ localStorage.setItem('references', JSON.stringify(references)); }catch(e){}
+}
+function refsFor(scope){ return references.filter(r=>r.scope === scope); }
+function scopeName(scope){ return scope === 'school' ? 'School-wide' : (classes[scope] ? classes[scope].title : scope); }
+
+function setRefScope(s){
+  refScope = s;
+  renderReferences();
+  const el = document.querySelector(`#refScopeSlider .cal-pill[data-key="${s}"]`);
+  if(el && el.scrollIntoView) el.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
+}
+
+function addReference(){
+  const title = document.getElementById('refTitle').value.trim();
+  const body = document.getElementById('refBody').value.trim();
+  if(!title || !body){ alert('A title and some content are both needed.'); return; }
+  const isLink = /^https?:\/\//i.test(body) && body.split(/\s+/).length === 1;
+  references.unshift({ id:'r'+Date.now(), scope:refScope, title, body,
+                       kind: isLink ? 'link' : 'note', when:new Date().toLocaleDateString() });
+  saveReferences();
+  document.getElementById('refTitle').value = '';
+  document.getElementById('refBody').value = '';
+  document.getElementById('refForm').style.display = 'none';
+  renderReferences();
+}
+function removeReference(id){
+  if(!confirm('Delete this reference?')) return;
+  references = references.filter(r=>r.id !== id);
+  saveReferences();
+  renderReferences();
+}
+
+/* ---- uploading a syllabus or handbook ---- */
+function triggerRefUpload(){ document.getElementById('refFileInput').click(); }
+
+document.getElementById('refFileInput').addEventListener('change', function(e){
+  const file = e.target.files[0];
+  e.target.value = '';
+  if(!file) return;
+
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  const readable = ['txt','md','csv','html','json','rtf'].indexOf(ext) !== -1;
+
+  const store = (body, note)=>{
+    references.unshift({
+      id:'r'+Date.now(), scope:refScope, title:file.name, body,
+      kind:'file', fileName:file.name, note, when:new Date().toLocaleDateString()
+    });
+    saveReferences();
+    renderReferences();
+  };
+
+  if(readable){
+    const reader = new FileReader();
+    reader.onload = ()=>store(String(reader.result || '').slice(0, 20000), null);
+    reader.onerror = ()=>alert("Couldn't read that file.");
+    reader.readAsText(file);
+  } else {
+    // PDFs and Word files can't be read in the browser without extra libraries,
+    // so we keep the name and say plainly that Jarvis can't see inside it.
+    store('(' + ext.toUpperCase() + ' file — contents not readable in the browser)',
+          'Jarvis can see the file name but not what\'s inside. Open it, copy the text, and paste it in as a note for the real thing.');
+  }
+});
+
+function renderReferences(){
+  const slider = document.getElementById('refScopeSlider');
+  if(slider){
+    const pill = (key, icon, name) => {
+      const n = refsFor(key).length;
+      return `<div class="cal-pill ${refScope===key?'active':''}" data-key="${key}" onclick="setRefScope('${key}')">
+        <span>${icon}</span><span>${escapeHtml(name)}</span>${n ? `<span class="ct">${n}</span>` : ''}
+      </div>`;
+    };
+    slider.innerHTML = pill('school', '🏫', 'School-wide')
+      + Object.entries(classes).map(([id,c])=>pill(id, c.icon, c.title)).join('');
+  }
+
+  const note = document.getElementById('refScopeNote');
+  if(note){
+    note.textContent = refScope === 'school'
+      ? 'Handbook, attendance policy, bell schedule, anything that applies everywhere. Jarvis uses these on every question.'
+      : `Syllabus, rubrics and class rules for ${scopeName(refScope)}. Jarvis uses these whenever you\'re working on that class.`;
+  }
+
+  const el = document.getElementById('refList');
+  if(!el) return;
+  const list = refsFor(refScope);
+  el.innerHTML = list.length ? list.map(r=>`
+    <div class="ws-email">
+      <div class="we-top">
+        <span class="we-sender">${r.kind==='link'?'🔗':r.kind==='file'?'📄':'📝'} ${escapeHtml(r.title)}</span>
+        <span class="we-date">${escapeHtml(r.when)} · <span class="view-link" onclick="removeReference('${r.id}')">delete</span></span>
+      </div>
+      <div class="we-subj" style="white-space:normal;">${r.kind==='link'
+        ? `<a href="${escapeHtml(r.body)}" target="_blank" style="color:var(--blue);">${escapeHtml(r.body)}</a>`
+        : escapeHtml(truncate(r.body, 220))}</div>
+      ${r.note ? `<div class="we-subj" style="white-space:normal;color:var(--amber);">⚠️ ${escapeHtml(r.note)}</div>` : ''}
+    </div>`).join('') : `<div class="ws-empty">Nothing saved for ${escapeHtml(scopeName(refScope))} yet.</div>`;
+}
+
+/* School-wide references always go to Jarvis; class ones only when that
+   class is what you're working on. */
+function referenceContext(focusClassId){
+  const picked = references.filter(r=>r.scope === 'school' || (focusClassId && r.scope === focusClassId));
+  if(!picked.length) return '';
+  return '\n\n=== REFERENCE MATERIAL THE STUDENT SAVED ===\n' +
+    picked.map(r=>`[${scopeName(r.scope)} — ${r.title}] ${truncate(r.body, 600)}`).join('\n');
+}
+
 /* ===================== UPDATE PAGE ===================== */
 let icMinutesAgo = 42, inboxMinutesAgo = 8;
 function syncSource(which){
@@ -3909,6 +4178,7 @@ function go(view){
   }
   if(view==='attendance') renderAttendance();
   if(view==='inbox'){ renderMailSlider(); renderInbox(); }
+  if(view==='update') renderReferences();
   if(view==='email') renderEmailView();
   if(view==='localai') testJarvis();
   if(view==='ai') renderAiPage();
@@ -3938,6 +4208,7 @@ function initApp(){
   safe('mailboxes', renderMailSlider);
   safe('inbox', renderInbox);
   safe('changelog', renderChangelog);
+  safe('references', renderReferences);
   safe('AI page', renderAiPage);
 
   // Give the page a moment to paint, then get ahead on the next few assignments.
