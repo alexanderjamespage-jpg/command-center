@@ -4099,6 +4099,7 @@ function jarvisSystemPrompt(extra, focusClassId){
         + "Answer using the DATA below, and be specific — name real assignments, dates and numbers rather than talking in generalities. "
         + "Keep answers short unless asked for detail. If the data doesn't cover something, say so plainly instead of inventing it. "
         + "Values marked with a warning symbol are placeholders that haven't been filled in yet; treat them as unknown.";
+  if(jarvisPersona) p += ' ' + JARVIS_PERSONA;
   if(jarvisUseData) p += '\n\n=== DATA ===\n' + buildAppContext();
   p += referenceContext(focusClassId);
   if(extra) p += '\n\n' + extra;
@@ -4131,15 +4132,40 @@ async function jarvisChat(messages, opts){
    voice where one exists. The orb animates while it's talking.
    ===================================================================== */
 let ttsOn = false, jarvisVoiceName = '';
+let ttsRate = 0.92, ttsPitch = 0.82, jarvisPersona = true;
 try{
   ttsOn = localStorage.getItem('ttsOn') === '1';
   jarvisVoiceName = localStorage.getItem('jarvisVoice') || '';
+  ttsRate = parseFloat(localStorage.getItem('ttsRate') || '0.92');
+  ttsPitch = parseFloat(localStorage.getItem('ttsPitch') || '0.82');
+  jarvisPersona = localStorage.getItem('jarvisPersona') !== '0';
 }catch(e){}
 
-const VOICE_PREFERENCE = [/daniel/i, /arthur/i, /oliver/i, /google uk english male/i, /british/i, /en-GB/i];
+/* Ranked hunt for a composed British male voice — the closest a browser
+   can get. Names differ per platform, so we check the good ones first
+   and fall back through en-GB, then any English voice. */
+const VOICE_RANK = [
+  /^daniel/i,                      // macOS / iOS en-GB male
+  /google uk english male/i,       // Chrome
+  /microsoft (ryan|george|thomas)/i, // Windows en-GB male
+  /^(arthur|oliver|malcolm|graham)/i,
+  /en[-_]?GB/i
+];
+const FEMALE_HINT = /(female|samantha|serena|kate|fiona|moira|tessa|karen|victoria|susan|hazel|zira|martha|amelie|catherine|libby|sonia|maisie)/i;
 
 function availableVoices(){
   return (window.speechSynthesis && speechSynthesis.getVoices) ? speechSynthesis.getVoices() : [];
+}
+function scoreVoice(v){
+  const tag = v.name + ' ' + v.lang;
+  for(let i = 0; i < VOICE_RANK.length; i++){
+    if(VOICE_RANK[i].test(tag)) return i + (FEMALE_HINT.test(v.name) ? 40 : 0);
+  }
+  if(/^en/i.test(v.lang)) return 50 + (FEMALE_HINT.test(v.name) ? 40 : 0);
+  return 200;
+}
+function rankedVoices(){
+  return availableVoices().slice().sort((a,b)=>scoreVoice(a) - scoreVoice(b));
 }
 function pickJarvisVoice(){
   const voices = availableVoices();
@@ -4148,24 +4174,27 @@ function pickJarvisVoice(){
     const chosen = voices.find(v=>v.name === jarvisVoiceName);
     if(chosen) return chosen;
   }
-  for(const pattern of VOICE_PREFERENCE){
-    const hit = voices.find(v=>pattern.test(v.name) || pattern.test(v.lang));
-    if(hit) return hit;
-  }
-  return voices.find(v=>/^en/i.test(v.lang)) || voices[0];
+  return rankedVoices()[0] || null;
 }
 function renderVoiceOptions(){
   const sel = document.getElementById('jarvisVoiceSelect');
   if(!sel) return;
-  const voices = availableVoices();
+  const voices = rankedVoices();
   const active = pickJarvisVoice();
   sel.innerHTML = voices.length
-    ? voices.map(v=>`<option value="${escapeHtml(v.name)}" ${active && v.name===active.name ? 'selected' : ''}>${escapeHtml(v.name)} — ${escapeHtml(v.lang)}</option>`).join('')
+    ? voices.map((v,i)=>`<option value="${escapeHtml(v.name)}" ${active && v.name===active.name ? 'selected' : ''}>${i===0 ? '★ ' : ''}${escapeHtml(v.name)} — ${escapeHtml(v.lang)}</option>`).join('')
     : '<option value="">No voices available in this browser</option>';
 }
 if(window.speechSynthesis){
   speechSynthesis.onvoiceschanged = renderVoiceOptions;
 }
+
+/* The manner, not the voice: measured, precise, dry. */
+const JARVIS_PERSONA =
+  "Speak as a composed British house assistant: courteous, precise and understated. " +
+  "Lead with the answer, never pad. Use full sentences and correct grammar, no slang, no exclamation marks, no emoji. " +
+  "Dry understatement is welcome when something has gone wrong; flattery never is. " +
+  "Address the user as 'sir' only occasionally, never more than once in a reply.";
 
 function orbEl(){ return document.getElementById('jarvisOrb'); }
 function setOrbSpeaking(on){
@@ -4187,7 +4216,7 @@ function speak(text){
     const u = new SpeechSynthesisUtterance(line);
     const v = pickJarvisVoice();
     if(v){ u.voice = v; u.lang = v.lang; }
-    u.rate = 0.98; u.pitch = 0.92;
+    u.rate = ttsRate; u.pitch = ttsPitch;
     if(queued === 0) u.onstart = ()=>setOrbSpeaking(true);
     u.onerror = ()=>setOrbSpeaking(false);
     speechSynthesis.speak(u);
@@ -4569,16 +4598,42 @@ function renderSettings(){
         <div class="set-row">
           <div class="srl">
             <div class="srt">Voice</div>
-            <div class="srd">Pulled from your operating system, so the list differs between Mac, iPhone and Windows. A British male voice is picked by default where one exists.</div>
+            <div class="srd">Starred is the best match on this device — a British male voice where one exists. The list comes from your operating system, so Mac, iPhone and Windows each offer different options.</div>
           </div>
           <select class="ai-input" id="jarvisVoiceSelect" style="flex:1 1 260px;" onchange="saveVoiceChoice(this.value)"></select>
         </div>
         <div class="set-row">
           <div class="srl">
-            <div class="srt">Test it</div>
-            <div class="srd">Say something in the selected voice. On iPhone the first attempt needs a tap before Safari will allow audio.</div>
+            <div class="srt">Pace</div>
+            <div class="srd">Lower is more measured. <b id="rateVal">${ttsRate.toFixed(2)}</b></div>
           </div>
-          <button class="cal-add-btn" onclick="testVoice()">▶ Play sample</button>
+          <input type="range" class="whatif-slider" style="flex:1 1 200px;accent-color:var(--cyan);" min="0.6" max="1.3" step="0.02"
+            value="${ttsRate}" oninput="setTtsRate(this.value)">
+        </div>
+        <div class="set-row">
+          <div class="srl">
+            <div class="srt">Pitch</div>
+            <div class="srd">Lower sounds calmer and more formal. <b id="pitchVal">${ttsPitch.toFixed(2)}</b></div>
+          </div>
+          <input type="range" class="whatif-slider" style="flex:1 1 200px;accent-color:var(--cyan);" min="0.5" max="1.2" step="0.02"
+            value="${ttsPitch}" oninput="setTtsPitch(this.value)">
+        </div>
+        <div class="set-row">
+          <div class="srl">
+            <div class="srt">Formal manner</div>
+            <div class="srd">Answers come back composed and understated rather than chatty — answer first, no padding, no exclamation marks.</div>
+          </div>
+          <input type="checkbox" class="side-check" ${jarvisPersona?'checked':''} onchange="setPersona(this.checked)">
+        </div>
+        <div class="set-row">
+          <div class="srl">
+            <div class="srt">Hear it</div>
+            <div class="srd">On iPhone the first attempt needs a tap before Safari will allow audio.</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="cal-add-btn" onclick="testVoice()">▶ Play sample</button>
+            <button class="cal-add-btn" onclick="resetVoiceTuning()">Reset to default</button>
+          </div>
         </div>
       </div>`;
     renderVoiceOptions();
@@ -4650,10 +4705,33 @@ function saveVoiceChoice(name){
   jarvisVoiceName = name;
   try{ localStorage.setItem('jarvisVoice', name); }catch(e){}
 }
+function setTtsRate(v){
+  ttsRate = parseFloat(v);
+  try{ localStorage.setItem('ttsRate', String(ttsRate)); }catch(e){}
+  const el = document.getElementById('rateVal');
+  if(el) el.textContent = ttsRate.toFixed(2);
+}
+function setTtsPitch(v){
+  ttsPitch = parseFloat(v);
+  try{ localStorage.setItem('ttsPitch', String(ttsPitch)); }catch(e){}
+  const el = document.getElementById('pitchVal');
+  if(el) el.textContent = ttsPitch.toFixed(2);
+}
+function setPersona(on){
+  jarvisPersona = !!on;
+  try{ localStorage.setItem('jarvisPersona', jarvisPersona ? '1' : '0'); }catch(e){}
+}
+function resetVoiceTuning(){
+  jarvisVoiceName = '';
+  setTtsRate(0.92);
+  setTtsPitch(0.82);
+  try{ localStorage.removeItem('jarvisVoice'); }catch(e){}
+  renderSettings();
+}
 function testVoice(){
   const wasOff = !ttsOn;
   if(wasOff) ttsOn = true;
-  speak('Good afternoon. All systems are responding normally.');
+  speak('Good afternoon, sir. All systems are responding normally. You have three assignments due this week.');
   if(wasOff) ttsOn = false;
 }
 
