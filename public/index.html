@@ -3948,7 +3948,7 @@ try{
    CORS preflight — and Ollama's allowed-header list doesn't include it, which
    kills the request. Only switch it on if you actually see ngrok's interstitial
    warning page instead of JSON. */
-let ollamaSkipHeader = false;
+let ollamaSkipHeader = true;
 let jarvisUseData = true;   // send grades / attendance / email as context
 let jarvisPrefetch = true;  // pre-write plans in the background at startup
 const PREFETCH_LIMIT = 6;   // how many upcoming assignments to get ahead on
