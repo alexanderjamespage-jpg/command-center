@@ -4836,6 +4836,181 @@ function initApp(){
 }
 
 document.addEventListener('DOMContentLoaded', initApp);
+
+
+/* ============================================================
+   INFINITE CAMPUS OVERLAY
+   Paste this into public/index.html inside the same <script>
+   block that defines `classes` — anywhere AFTER line ~1176.
+
+   Fetches grades from the Mac mini proxy and overlays real data
+   onto the local `classes` object without destroying your notes,
+   requirements, or attached files.
+
+   Provenance is preserved: every assignment gets src:'ic' or
+   src:'local' so nothing invented gets presented as real.
+   ============================================================ */
+
+const IC_ENDPOINT = () => `${ollamaUrl}/grades.json`;
+
+/* Set this to whatever redraws your class cards. Find it with:
+     grep -n "function render\|function draw\|function paint" public/index.html
+   Leave null and the overlay still runs — the UI just won't
+   refresh until the next redraw happens on its own. */
+const IC_RENDER_FN = renderClassGrid;
+
+let icState = { live: false, lastChecked: null, error: null, matched: [], unmatched: [] };
+
+/* Course names differ between IC and your local titles
+   ("Photography II" vs "Photography 2" vs "PHOTO II"). Strip to a
+   comparable core: lowercase, no punctuation, roman numerals to digits. */
+function icNormaliseName(s){
+  if(!s) return '';
+  return String(s)
+    .toLowerCase()
+    .replace(/\biv\b/g,'4').replace(/\biii\b/g,'3')
+    .replace(/\bii\b/g,'2').replace(/\bi\b/g,'1')
+    .replace(/[^a-z0-9]/g,'');
+}
+
+function icFindLocalKey(icCourseName){
+  const target = icNormaliseName(icCourseName);
+  if(!target) return null;
+
+  for(const key in classes){
+    if(icNormaliseName(classes[key].title) === target) return key;
+  }
+  // Fall back to containment — catches "AP Pre Calculus" vs "Pre Calculus".
+  for(const key in classes){
+    const local = icNormaliseName(classes[key].title);
+    if(local && (local.includes(target) || target.includes(local))) return key;
+  }
+  return null;
+}
+
+function icGradeClass(pct){
+  const n = parseFloat(pct);
+  if(isNaN(n)) return '';
+  if(n >= 90) return 'a';
+  if(n >= 80) return 'b';
+  if(n >= 70) return 'c';
+  if(n >= 60) return 'd';
+  return 'f';
+}
+
+/* Overlay one IC course onto one local class entry. */
+function icOverlayCourse(key, course){
+  const c = classes[key];
+  if(!c) return;
+
+  if(course.grade)   c.grade = course.grade;
+  if(course.percent){
+    c.pct = String(course.percent).replace(/%*$/,'') + '%';
+    c.gradeClass = icGradeClass(course.percent);
+  }
+  if(course.teacher) c.icTeacher = course.teacher;   // kept separate, not overwriting yours
+  if(course.period)  c.icPeriod  = course.period;
+  c.icSynced = Date.now();
+
+  if(!Array.isArray(course.assignments) || !course.assignments.length) return;
+
+  // Tag anything already present as local so it stays distinguishable.
+  ['upcoming','past'].forEach(list=>{
+    (c[list] || []).forEach(a=>{ if(!a.src) a.src = 'local'; });
+  });
+
+  const now = Date.now();
+  course.assignments.forEach(a=>{
+    const dueTs  = a.due ? Date.parse(a.due) : NaN;
+    const isPast = a.score != null || (!isNaN(dueTs) && dueTs < now);
+    const list   = isPast ? 'past' : 'upcoming';
+    c[list] = c[list] || [];
+
+    const existing = c[list].find(x => icNormaliseName(x.name) === icNormaliseName(a.name));
+
+    if(existing){
+      // Real data wins for scores; your req/turnIn/drafts are untouched.
+      if(a.score != null) existing.score = `${a.score}/${a.points ?? '?'}`;
+      if(a.due) existing.due = a.due;
+      if(a.points != null) existing.points = a.points;
+      existing.missing = a.missing;
+      existing.late = a.late;
+      existing.src = 'ic';
+    } else {
+      c[list].push({
+        name: a.name,
+        due: a.due || 'No due date set',
+        points: a.points ?? 0,
+        score: a.score != null ? `${a.score}/${a.points ?? '?'}` : undefined,
+        status: isPast ? 'graded' : 'upcoming',
+        cls: '',
+        missing: a.missing,
+        late: a.late,
+        req: '',
+        src: 'ic'
+      });
+    }
+  });
+}
+
+async function syncInfiniteCampus(quiet){
+  try{
+    const res = await fetch(IC_ENDPOINT(), { headers: ollamaHeaders() });
+    if(!res.ok) throw new Error(`grades endpoint returned ${res.status}`);
+    const data = await res.json();
+
+    icState.live = !!data.live;
+    icState.lastChecked = data.fetched ? data.fetched * 1000 : Date.now();
+    icState.error = null;
+    icState.matched = [];
+    icState.unmatched = [];
+
+    if(!data.live){
+      if(!quiet) console.log('[IC] gradebook is switched off at the school — nothing to overlay');
+      return icState;
+    }
+
+    (data.courses || []).forEach(course=>{
+      const key = icFindLocalKey(course.name);
+      if(key){ icOverlayCourse(key, course); icState.matched.push(course.name); }
+      else   { icState.unmatched.push(course.name); }
+    });
+
+    if(icState.unmatched.length)
+      console.warn('[IC] no local match for:', icState.unmatched.join(', '));
+
+    if(typeof IC_RENDER_FN === 'function') IC_RENDER_FN();
+    return icState;
+
+  }catch(e){
+    icState.error = e.message;
+    if(!quiet) console.warn('[IC] sync failed:', e.message);
+    return icState;
+  }
+}
+
+/* Human-readable status for a settings row or header badge. */
+function icStatusText(){
+  if(icState.error) return `Infinite Campus: ${icState.error}`;
+  if(!icState.lastChecked) return 'Infinite Campus: not checked yet';
+  if(!icState.live) return 'Infinite Campus: connected — school has grades turned off';
+  const n = icState.matched.length;
+  return `Infinite Campus: live, ${n} course${n===1?'':'s'} synced`;
+}
+
+/* Only real IC assignments should reach the model. Use this to build
+   Jarvis prompts instead of reading c.upcoming directly, so it never
+   reasons over placeholder entries as though they were graded work. */
+function icRealAssignments(classId, list){
+  const c = classes[classId];
+  if(!c) return [];
+  return (c[list] || []).filter(a => a.src === 'ic');
+}
+
+syncInfiniteCampus(true);
+setInterval(()=>syncInfiniteCampus(true), 10 * 60 * 1000);
+
+
 </script>
 </body>
 </html>
