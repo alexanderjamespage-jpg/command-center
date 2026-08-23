@@ -1490,6 +1490,7 @@ function computeProjectedForClass(id){
   // card falls back to the real reported grade (c.pct) instead of a fake one.
   c.past.forEach(a=>{
     if(c.icSynced && a.src !== 'ic') return;
+    if(!a.score) return;   // past-due but not graded yet — nothing to project from
     const m = a.score.match(/([\d.]+)\s*\/\s*([\d.]+)/);
     if(m){ earned += parseFloat(m[1]); total += parseFloat(m[2]); }
   });
@@ -1604,6 +1605,7 @@ function heuristicEstimate(classId, idx){
   const a = c.upcoming[idx];
   let earned = 0, total = 0;
   c.past.forEach(p=>{
+    if(!p.score) return;   // past-due but not graded yet — nothing to average in
     const m = p.score.match(/([\d.]+)\s*\/\s*([\d.]+)/);
     if(m){ earned += parseFloat(m[1]); total += parseFloat(m[2]); }
   });
@@ -4991,7 +4993,11 @@ function icOverlayCourse(key, course){
 
   const now = Date.now();
   course.assignments.forEach(a=>{
-    const dueTs  = a.due ? Date.parse(a.due) : NaN;
+    // Date.parse("Aug 24") silently defaults to the year 2001, not the
+    // current year — it would mark every real assignment "past" no matter
+    // its actual due date. parseDue() anchors to the real SCHOOL_YEAR.
+    const dueDate = a.due ? parseDue(a.due) : null;
+    const dueTs   = dueDate ? dueDate.getTime() : NaN;
     const isPast = a.score != null || (!isNaN(dueTs) && dueTs < now);
     const list   = isPast ? 'past' : 'upcoming';
     c[list] = c[list] || [];
@@ -5001,6 +5007,7 @@ function icOverlayCourse(key, course){
     if(existing){
       // Real data wins for scores; your req/turnIn/drafts are untouched.
       if(a.score != null) existing.score = `${a.score}/${a.points ?? '?'}`;
+      else if(isPast && !existing.score) existing.score = 'Not graded yet';
       if(a.due) existing.due = a.due;
       if(a.points != null) existing.points = a.points;
       existing.missing = a.missing;
@@ -5008,11 +5015,14 @@ function icOverlayCourse(key, course){
       existing.src = 'ic';
       if(!existing.plan) queuePlanAutoFill(key, list, c[list].indexOf(existing));
     } else {
+      // Past-due-but-ungraded real assignments still need a display-safe
+      // score string — every render site and Jarvis prompt expects one.
+      const scoreText = a.score != null ? `${a.score}/${a.points ?? '?'}` : (isPast ? 'Not graded yet' : undefined);
       c[list].push({
         name: a.name,
         due: a.due || 'No due date set',
         points: a.points ?? 0,
-        score: a.score != null ? `${a.score}/${a.points ?? '?'}` : undefined,
+        score: scoreText,
         status: isPast ? 'graded' : 'upcoming',
         cls: '',
         missing: a.missing,
@@ -5022,6 +5032,19 @@ function icOverlayCourse(key, course){
       });
       queuePlanAutoFill(key, list, c[list].length - 1);
     }
+  });
+
+  // Real assignments land appended after the demo placeholders, so without
+  // a sort "Next up" keeps showing old sample data forever — including demo
+  // due dates that are already in the past. Not-yet-due items sort first
+  // (soonest first); anything already overdue or undated sinks to the
+  // bottom instead of blocking real, actually-upcoming work from showing.
+  c.upcoming.sort((x,y)=>{
+    const dx = parseDue(x.due), dy = parseDue(y.due);
+    const xOverdue = dx && dx < TODAY, yOverdue = dy && dy < TODAY;
+    if(xOverdue !== yOverdue) return xOverdue ? 1 : -1;
+    if(dx && dy) return dx - dy;
+    return dx ? -1 : dy ? 1 : 0;
   });
 }
 

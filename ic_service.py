@@ -24,6 +24,7 @@ import os
 import sys
 import threading
 import time
+from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
@@ -87,12 +88,66 @@ def ic_login(username, password):
     return s
 
 
-def normalise(raw):
+def friendly_due(iso):
+    """'2026-08-24T05:59:00.000Z' -> 'Aug 24', matching the dashboard's demo-data style."""
+    if not iso:
+        return None
+    try:
+        dt = datetime.strptime(iso, "%Y-%m-%dT%H:%M:%S.%fZ")
+        return dt.strftime("%b %-d")
+    except ValueError:
+        return iso
+
+
+def fetch_assignments(session):
+    """
+    Real assignment data lives under /api/portal/assignment/, not the
+    /resources/portal/grades endpoint (which only has course-level grades).
+    byDateRange covers a wide window of due work (scored or not);
+    recentlyScored back-fills anything graded further outside that window.
+    Both are merged and deduped by objectSectionID, then bucketed by course
+    name so normalise() can attach them to the right course.
+    """
+    now = datetime.utcnow()
+    start = (now - timedelta(days=60)).strftime("%Y-%m-%dT00:00:00")
+    end = (now + timedelta(days=120)).strftime("%Y-%m-%dT00:00:00")
+    scored_since = (now - timedelta(days=365)).strftime("%Y-%m-%dT00:00:00")
+
+    seen = {}
+    for path, params in [
+        ("/api/portal/assignment/byDateRange", {"startDate": start, "endDate": end}),
+        ("/api/portal/assignment/recentlyScored", {"modifiedDate": scored_since}),
+    ]:
+        r = session.get(f"{BASE}{path}", params=params, timeout=20)
+        r.raise_for_status()
+        for a in r.json() or []:
+            key = a.get("objectSectionID")
+            if key is not None:
+                seen[key] = a
+            else:
+                seen[id(a)] = a
+
+    by_course = {}
+    for a in seen.values():
+        by_course.setdefault(a.get("courseName"), []).append({
+            "name": a.get("assignmentName"),
+            "due": friendly_due(a.get("dueDate")),
+            "points": a.get("totalPoints"),
+            "score": a.get("scorePoints"),
+            "missing": bool(a.get("missing")),
+            "late": bool(a.get("late")),
+        })
+    return by_course
+
+
+def normalise(raw, assignments_by_course=None):
     """
     Flatten IC's grades payload into something compact enough to hand to a
-    model. Field names below are best-guess until we see a populated
-    response -- revisit once gradesEnabled goes true.
+    model. Course-level grade fields come from /resources/portal/grades;
+    assignment-level detail comes from fetch_assignments() and is merged
+    in by course name.
     """
+    assignments_by_course = assignments_by_course or {}
     out = {"live": False, "courses": []}
     if not raw:
         return out
@@ -111,17 +166,7 @@ def normalise(raw):
             "roomName": course.get("roomName"),
             "grade": primary.get("progressScore") or primary.get("score"),
             "percent": primary.get("progressPercent") or primary.get("percent"),
-            "assignments": [
-                {
-                    "name": a.get("assignmentName"),
-                    "due": a.get("dueDate"),
-                    "points": a.get("totalPoints"),
-                    "score": a.get("scorePoints"),
-                    "missing": bool(a.get("missing")),
-                    "late": bool(a.get("late")),
-                }
-                for a in (course.get("assignments") or [])
-            ],
+            "assignments": assignments_by_course.get(course.get("courseName"), []),
         })
     return out
 
@@ -130,7 +175,15 @@ def poll_once(username, password):
     s = ic_login(username, password)
     r = s.get(f"{BASE}/resources/portal/grades", timeout=20)
     r.raise_for_status()
-    data = normalise(r.json())
+    raw = r.json()
+
+    try:
+        assignments_by_course = fetch_assignments(s)
+    except Exception as e:
+        print(f"[ic] assignment fetch failed, grades-only this cycle — {e}")
+        assignments_by_course = {}
+
+    data = normalise(raw, assignments_by_course)
     data["fetched"] = int(time.time())
 
     with _lock:
