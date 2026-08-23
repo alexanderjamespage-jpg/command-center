@@ -1484,7 +1484,12 @@ function computeProjectedForClass(id){
   const c = classes[id];
   if(aiEstimatesOn[id]===false) return {pct:Math.round(parseFloat(c.pct)), letter:c.grade};
   let earned=0, total=0;
+  // Once a course is synced with real IC data, don't let leftover demo/local
+  // placeholder scores masquerade as the projection — only real ic-sourced
+  // past assignments count until real assignment data is wired in, so the
+  // card falls back to the real reported grade (c.pct) instead of a fake one.
   c.past.forEach(a=>{
+    if(c.icSynced && a.src !== 'ic') return;
     const m = a.score.match(/([\d.]+)\s*\/\s*([\d.]+)/);
     if(m){ earned += parseFloat(m[1]); total += parseFloat(m[2]); }
   });
@@ -3943,17 +3948,19 @@ try{
   ollamaModel = localStorage.getItem('ollamaModel') || OLLAMA_MODEL_DEFAULT;
 }catch(e){}
 
-/* The ngrok-skip-browser-warning header is OFF by default. It's a non-standard
-   header, so the browser has to ask Ollama for permission to send it during the
-   CORS preflight — and Ollama's allowed-header list doesn't include it, which
-   kills the request. Only switch it on if you actually see ngrok's interstitial
-   warning page instead of JSON. */
+/* The ngrok-skip-browser-warning header is ON by default. Without it, ngrok's
+   free-tier interstitial page intercepts every request from a real browser
+   (curl-like clients are unaffected) and returns HTML with no CORS headers,
+   which fails as an opaque CORS error rather than a readable response. The
+   ic_service.py proxy already allows this header in its preflight response,
+   so it's safe to always send. */
 let ollamaSkipHeader = true;
 let jarvisUseData = true;   // send grades / attendance / email as context
 let jarvisPrefetch = true;  // pre-write plans in the background at startup
 const PREFETCH_LIMIT = 6;   // how many upcoming assignments to get ahead on
 try{
-  ollamaSkipHeader = localStorage.getItem('ollamaSkipHeader') === '1';
+  const storedSkipHeader = localStorage.getItem('ollamaSkipHeader');
+  if(storedSkipHeader !== null) ollamaSkipHeader = storedSkipHeader === '1';
   jarvisUseData = localStorage.getItem('jarvisUseData') !== '0';
   jarvisPrefetch = localStorage.getItem('jarvisPrefetch') !== '0';
 }catch(e){}
@@ -4862,12 +4869,15 @@ const IC_RENDER_FN = renderClassGrid;
 let icState = { live: false, lastChecked: null, error: null, matched: [], unmatched: [] };
 
 /* Course names differ between IC and your local titles
-   ("Photography II" vs "Photography 2" vs "PHOTO II"). Strip to a
-   comparable core: lowercase, no punctuation, roman numerals to digits. */
+   ("Photography II (CTE)" vs "Commercial Photography 2", "TV Broadcasting 1"
+   vs "TV and Broadcasting 1"). Strip to a comparable core: drop parenthetical
+   tags, drop stopwords, lowercase, no punctuation, roman numerals to digits. */
 function icNormaliseName(s){
   if(!s) return '';
   return String(s)
+    .replace(/\([^)]*\)/g,'')
     .toLowerCase()
+    .replace(/\b(and|the|a|an|of)\b/g,'')
     .replace(/\biv\b/g,'4').replace(/\biii\b/g,'3')
     .replace(/\bii\b/g,'2').replace(/\bi\b/g,'1')
     .replace(/[^a-z0-9]/g,'');
