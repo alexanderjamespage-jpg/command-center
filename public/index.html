@@ -820,13 +820,10 @@ body{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     <div class="nav-item" data-view="calendar"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg></span>Calendar</div>
     <div class="nav-item" data-view="attendance"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.5l2.4 2.4L15.8 9.5"/></svg></span>Attendance</div>
     <div class="nav-item" data-view="inbox"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6 8.5 7 8.5-7"/></svg></span>Inbox</div>
-    <div class="nav-item" data-view="ai"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v3M12 17v3M4 12h3M17 12h3M6.5 6.5l2 2M15.5 15.5l2 2M17.5 6.5l-2 2M8.5 15.5l-2 2"/><circle cx="12" cy="12" r="2.3"/></svg></span>AI</div>
     <div class="nav-item" data-view="localai"><span class="ic jarvis-orb"><svg viewBox="0 0 48 48" width="19" height="19"><circle class="ring" cx="24" cy="24" r="20" stroke-width="2"/><g class="segs"><path class="seg" d="M24 7.5 A16.5 16.5 0 0 1 38.3 15.8" stroke-width="3.4"/><path class="seg" d="M38.3 32.2 A16.5 16.5 0 0 1 24 40.5" stroke-width="3.4"/><path class="seg" d="M9.7 32.2 A16.5 16.5 0 0 1 9.7 15.8" stroke-width="3.4"/></g><circle class="core" cx="24" cy="24" r="6"/></svg></span>Jarvis</div>
     <div class="nav-item" data-view="settings"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1Z"/></svg></span>Settings</div>
     <div class="nav-item" data-view="update"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 13.66-5.66L20 8.5"/><path d="M20 4v4.5h-4.5"/><path d="M20 12a8 8 0 0 1-13.66 5.66L4 15.5"/><path d="M4 20v-4.5h4.5"/></svg></span>Update</div>
     <div class="nav-spacer"></div>
-    <!-- Ask AI now just opens the AI page instead of a bottom panel -->
-    <div class="nav-item ai-toggle" data-view="ai"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v3M12 17v3M4 12h3M17 12h3M6.5 6.5l2 2M15.5 15.5l2 2M17.5 6.5l-2 2M8.5 15.5l-2 2"/><circle cx="12" cy="12" r="2.3"/></svg></span>Ask AI</div>
   </div>
 
   <div class="main">
@@ -859,7 +856,7 @@ body{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
             <div class="icon-xl" id="cd-icon">📐</div>
             <div><h2 id="cd-title">Class</h2><div class="teacher" id="cd-teacher">Teacher</div></div>
           </div>
-          <div class="detail-grade"><div class="g" id="cd-pct">90%</div><div class="l" id="cd-grade" style="font-size:13px;color:white;margin-top:2px;">A-</div><div class="l" style="margin-top:2px;">CURRENT GRADE</div></div>
+          <div class="detail-grade" onclick="setManualGrade(currentClassId)" title="Click to enter your own estimate if nothing's posted yet"><div class="g" id="cd-pct">90%</div><div class="l" id="cd-grade" style="font-size:13px;color:white;margin-top:2px;">A-</div><div class="l" style="margin-top:2px;">CURRENT GRADE</div></div>
         </div>
         <div class="section-title" style="font-size:13px;">Assignments</div>
         <div id="sv-assignments"></div>
@@ -1448,6 +1445,7 @@ function handleFileUpload(file){
     a.drafts = a.drafts || [];
     a.drafts.unshift({ name:file.name, type:icon, when:new Date().toLocaleDateString() });
     a.review = null;                 // the feedback is stale now
+    saveUserContent(classId, 'upcoming', a);
     openWorkspace(classId, idx, 'upcoming');
     return;
   }
@@ -1458,6 +1456,7 @@ function handleFileUpload(file){
   a.review = null;
   if(whatIfDefaults[classId]) delete whatIfDefaults[classId][idx];
   if(whatIfState[classId]) delete whatIfState[classId][idx];
+  saveUserContent(classId, 'upcoming', a);
 
   if(context==='page') openAssignment(classId,'upcoming',idx);
   else if(context==='workspace') openWorkspace(classId, idx, 'upcoming');
@@ -1502,17 +1501,63 @@ function computeProjectedForClass(id){
       total += a.points;
     }
   });
-  const projected = total>0 ? (earned/total)*100 : parseFloat(c.pct);
-  return {pct:Math.round(projected), letter:pctToLetter(projected)};
+  if(total>0) {
+    const projected = (earned/total)*100;
+    return {pct:Math.round(projected), letter:pctToLetter(projected)};
+  }
+  // No real graded work to project from. If the school hasn't posted a
+  // grade for this course yet, say so honestly instead of showing the old
+  // demo number as if it were real — unless you've entered your own guess.
+  if(c.icSynced && c.pctSource === 'none') return {ungraded:true};
+  const projected = parseFloat(c.pct);
+  return {pct:Math.round(projected), letter:pctToLetter(projected), manual: c.pctSource==='manual'};
+}
+
+/* Lets you enter your own placeholder grade while the school hasn't
+   posted one yet. Clearly marked as yours — a real IC grade always
+   overwrites it the moment the school posts one. */
+function setManualGrade(id){
+  const c = classes[id];
+  if(c.pctSource === 'ic'){ alert(`${c.title} already has a real grade from the school — nothing to override.`); return; }
+  const current = c.pctSource==='manual' ? parseFloat(c.pct) : '';
+  const input = prompt(`No grade posted for ${c.title} yet. Enter your own estimate (0-100), or leave blank to clear it:`, current);
+  if(input === null) return;
+  const trimmed = input.trim();
+  if(trimmed === ''){
+    if(c.pctSource === 'manual') c.pctSource = 'none';
+  } else {
+    const pct = Math.max(0, Math.min(100, Math.round(parseFloat(trimmed))));
+    if(isNaN(pct)){ alert('Enter a number between 0 and 100.'); return; }
+    c.pct = pct + '%';
+    c.grade = pctToLetter(pct);
+    c.gradeClass = icGradeClass(pct);
+    c.pctSource = 'manual';
+  }
+  saveManualGrade(id, c);
+  if(currentClassId===id) openClass(id);
+  renderClassGrid();
+  renderDash();
 }
 
 /* ===================== DASHBOARD ===================== */
+/* Shared by every card/list that shows a course's current grade. Never
+   presents leftover demo numbers as if they were a real posted grade. */
+function gradeBadgeHtml(id, proj, size){
+  const style = size ? ` style="font-size:${size}px;"` : '';
+  if(proj.ungraded){
+    return `<div class="grade-stack" onclick="event.stopPropagation(); setManualGrade('${id}')" title="No grade posted yet — click to enter your own estimate">`
+      + `<span class="gs-pct"${style} style="color:var(--dim);font-size:${size||15}px;">—</span><span class="gs-ltr" style="color:var(--dim);">Not graded yet</span></div>`;
+  }
+  const gc = proj.pct>=80?'a':'b';
+  const manualTag = proj.manual ? ` onclick="event.stopPropagation(); setManualGrade('${id}')" title="Your estimate — click to change, replaced automatically once the school posts a grade"` : '';
+  return `<div class="grade-stack"${manualTag}><span class="gs-pct ${gc}"${style}>${proj.pct}%${proj.manual?'*':''}</span><span class="gs-ltr">${proj.letter}</span></div>`;
+}
+
 function renderDash(){
   const el = document.getElementById('dashList');
   el.innerHTML = Object.entries(classes).map(([id,c])=>{
     const next = c.upcoming[0];
     const proj = computeProjectedForClass(id);
-    const gc = proj.pct>=80?'a':'b';
     return `
     <div class="class-accordion" id="acc-${id}">
       <div class="class-summary-row" onclick="toggleAccordion('${id}')">
@@ -1525,7 +1570,7 @@ function renderDash(){
         </div>
         <div class="cs-right">
           <span class="cs-count">${c.upcoming.length} upcoming</span>
-          <div class="grade-stack"><span class="gs-pct ${gc}">${proj.pct}%</span><span class="gs-ltr">${proj.letter}</span></div>
+          ${gradeBadgeHtml(id, proj)}
           <span class="cs-chevron">▶</span>
         </div>
       </div>
@@ -1544,12 +1589,11 @@ function renderClassGrid(){
   document.getElementById('classGrid').innerHTML = Object.entries(classes).map(([id,c])=>{
     const next = c.upcoming[0];
     const proj = computeProjectedForClass(id);
-    const gc = proj.pct>=80?'a':'b';
     return `
     <div class="class-card" onclick="openClass('${id}')">
       <div class="class-banner" style="background:${c.color};"><span class="icon-lg">${c.icon}</span><span class="cname">${c.title}</span></div>
       <div class="class-body">
-        <div class="class-stat-row"><div class="grade-stack"><span class="gs-pct ${gc}" style="font-size:20px;">${proj.pct}%</span><span class="gs-ltr">${proj.letter}</span></div><span style="font-size:11px;color:var(--dim);">${c.upcoming.length} upcoming</span></div>
+        <div class="class-stat-row">${gradeBadgeHtml(id, proj, 20)}<span style="font-size:11px;color:var(--dim);">${c.upcoming.length} upcoming</span></div>
         <div class="up-next">Next up:</div>
         <div class="up-next-title">${next ? next.name : 'Nothing due'}</div>
         ${next ? `<div class="up-next-due ${next.cls}">${next.due}${next.studyTime ? ` · ⏱ ${next.studyTime}` : ''}</div>` : ''}
@@ -1560,13 +1604,15 @@ function renderClassGrid(){
 
 /* ===================== CLASS DETAIL ===================== */
 function refreshProjectedSummary(id){
-  const {pct, letter} = computeProjectedForClass(id);
+  const proj = computeProjectedForClass(id);
+  const pctText = proj.ungraded ? '—' : proj.pct+'%'+(proj.manual?'*':'');
+  const ltrText = proj.ungraded ? 'Not graded yet' : proj.letter;
   const pctEl = document.getElementById('proj-pct-'+id);
   const ltrEl = document.getElementById('proj-ltr-'+id);
-  if(pctEl){ pctEl.textContent = pct+'%'; ltrEl.textContent = `(${letter})`; }
+  if(pctEl){ pctEl.textContent = pctText; ltrEl.textContent = proj.ungraded ? '' : `(${ltrText})`; }
   const bannerPct = document.getElementById('cd-pct');
   const bannerLtr = document.getElementById('cd-grade');
-  if(bannerPct && currentClassId===id){ bannerPct.textContent = pct+'%'; bannerLtr.textContent = letter; }
+  if(bannerPct && currentClassId===id){ bannerPct.textContent = pctText; bannerLtr.textContent = ltrText; }
 }
 function updateAssignWhatIf(classId, idx, val){
   whatIfState[classId] = whatIfState[classId] || {};
@@ -1680,8 +1726,8 @@ function openClass(id){
 
   const estOn = aiEstimatesOn[id]!==false;
   const proj = computeProjectedForClass(id);
-  document.getElementById('cd-pct').textContent = proj.pct+'%';
-  document.getElementById('cd-grade').textContent = proj.letter;
+  document.getElementById('cd-pct').textContent = proj.ungraded ? '—' : proj.pct+'%'+(proj.manual?'*':'');
+  document.getElementById('cd-grade').textContent = proj.ungraded ? 'Not graded yet' : proj.letter;
 
   const merged = [
     ...c.upcoming.map((a,i)=>({...a, list:'upcoming', idx:i})),
@@ -2094,6 +2140,7 @@ async function wsGradeReview(classId, idx, list){
       { role:'user', content: ask }
     ], { temperature:0.4 });
     a.review = out;
+    saveUserContent(classId, list, a);
     if(box) box.innerHTML = `<div style="white-space:pre-wrap;">${escapeHtml(out)}</div>`;
   }catch(e){
     if(box) box.innerHTML = `<div class="ws-empty">Jarvis isn't reachable — ${escapeHtml(e.message)}</div>`;
@@ -2128,6 +2175,60 @@ function loadCachedPlans(){
         if(hit && hit.ts > cutoff) a.plan = hit.plan;
       });
     });
+  });
+}
+
+/* ---------------------------------------------------------------
+   USER CONTENT CACHE — files you upload, drafts, and Jarvis's grade
+   review live only on the `classes` object in memory, which is
+   rebuilt from scratch (demo data + a fresh IC sync) on every page
+   load. Without this, an "upload" only ever lasted until the next
+   reload. Keyed by name, not array index, so it survives real
+   assignments being added/reordered/removed by a later sync.
+   --------------------------------------------------------------- */
+let userContentCache = {};
+try{ userContentCache = JSON.parse(localStorage.getItem('userContentCache') || '{}'); }catch(e){}
+
+let manualGradeCache = {};
+try{ manualGradeCache = JSON.parse(localStorage.getItem('manualGradeCache') || '{}'); }catch(e){}
+function saveManualGrade(classId, c){
+  if(c.pctSource === 'manual') manualGradeCache[classId] = {pct:c.pct, grade:c.grade, gradeClass:c.gradeClass};
+  else delete manualGradeCache[classId];
+  try{ localStorage.setItem('manualGradeCache', JSON.stringify(manualGradeCache)); }catch(e){}
+}
+
+function userContentKey(classId, list, a){ return classId + '|' + list + '|' + a.name; }
+
+function saveUserContent(classId, list, a){
+  const key = userContentKey(classId, list, a);
+  if((a.turnIn && a.turnIn.length) || (a.drafts && a.drafts.length) || a.review){
+    userContentCache[key] = { turnIn:a.turnIn, drafts:a.drafts, review:a.review, ts:Date.now() };
+  } else {
+    delete userContentCache[key];
+  }
+  try{ localStorage.setItem('userContentCache', JSON.stringify(userContentCache)); }catch(e){}
+}
+
+function loadUserContent(){
+  Object.entries(classes).forEach(([id,c])=>{
+    ['upcoming','past'].forEach(list=>{
+      c[list].forEach(a=>{
+        const hit = userContentCache[userContentKey(id, list, a)];
+        if(!hit) return;
+        if(hit.turnIn) a.turnIn = hit.turnIn;
+        if(hit.drafts) a.drafts = hit.drafts;
+        if(hit.review) a.review = hit.review;
+      });
+    });
+    // A manual grade guess only applies until the school posts a real one —
+    // icOverlayCourse already sets pctSource:'ic' when that happens, which
+    // this must never clobber back to 'manual'.
+    if(manualGradeCache[id] && c.pctSource !== 'ic'){
+      c.pct = manualGradeCache[id].pct;
+      c.grade = manualGradeCache[id].grade;
+      c.gradeClass = manualGradeCache[id].gradeClass;
+      c.pctSource = 'manual';
+    }
   });
 }
 
@@ -3299,6 +3400,20 @@ function attStats(){
   return {absences:absences.length, tardies:tardies.length, excusedAbs, unexcusedAbs:absences.length-excusedAbs, rate};
 }
 function renderAttendance(){
+  if(icAttendanceEnabled === false){
+    // Not a bug, not missing data to go fetch — Infinite Campus's own
+    // per-school settings have attendance switched off for students here.
+    // Showing demo numbers in its place would just be a fabricated grade
+    // report, so say plainly why there's nothing real to show.
+    document.getElementById('attRingArc').setAttribute('stroke-dasharray', '0 100');
+    document.getElementById('attRingText').textContent = '—';
+    document.getElementById('attRate').textContent = '—';
+    document.getElementById('attBreakdown').innerHTML =
+      `<div class="ws-empty">Your school hasn't turned on attendance viewing for students in Infinite Campus — this isn't something the dashboard can fetch around. Ask the front office if you need your attendance record.</div>`;
+    document.getElementById('attList').innerHTML = '';
+    return;
+  }
+
   const s = attStats();
   document.getElementById('attRingArc').setAttribute('stroke-dasharray', `${s.rate} ${100-s.rate}`);
   document.getElementById('attRingText').textContent = s.rate+'%';
@@ -3307,7 +3422,8 @@ function renderAttendance(){
     <div class="att-breakdown-row"><span>Present</span><span class="v">${PRESENT_DAYS}</span></div>
     <div class="att-breakdown-row"><span>Excused absence</span><span class="v">${s.excusedAbs}</span></div>
     <div class="att-breakdown-row"><span>Unexcused</span><span class="v">${s.unexcusedAbs}</span></div>
-    <div class="att-breakdown-row"><span>Tardies</span><span class="v">${s.tardies}</span></div>`;
+    <div class="att-breakdown-row"><span>Tardies</span><span class="v">${s.tardies}</span></div>
+    ${icAttendanceEnabled === null ? `<div class="ws-empty" style="margin-top:8px;">Checking whether your school shares real attendance data…</div>` : `<div class="ws-empty" style="margin-top:8px;">Demo data — your school hasn't confirmed real attendance sharing yet.</div>`}`;
 
   const sorted = [...attendanceRecords].sort((a,b)=>b.date.localeCompare(a.date));
   document.getElementById('attList').innerHTML = sorted.map(r=>{
@@ -4844,6 +4960,7 @@ function initApp(){
 
   safe('data', hydrateData);
   safe('saved plans', loadCachedPlans);
+  safe('uploads & reviews', loadUserContent);
   safe('event caches', rebuildEventCaches);
   safe('AI history', seedConversations);
   safe('dashboard list', renderDash);
@@ -4896,9 +5013,11 @@ function IC_RENDER_FN(){
   if(typeof renderClassGrid === 'function') renderClassGrid();
   if(typeof renderDash === 'function') renderDash();
   if(currentClassId && typeof openClass === 'function') openClass(currentClassId);
+  if(typeof renderAttendance === 'function') renderAttendance();
 }
 
 let icState = { live: false, lastChecked: null, error: null, matched: [], unmatched: [] };
+let icAttendanceEnabled = null;   // null = not checked yet, true/false once a sync completes
 
 /* Course names differ between IC and your local titles
    ("Photography II (CTE)" vs "Commercial Photography 2", "TV Broadcasting 1"
@@ -4988,6 +5107,13 @@ function icOverlayCourse(key, course){
   if(course.percent){
     c.pct = String(course.percent).replace(/%*$/,'') + '%';
     c.gradeClass = icGradeClass(course.percent);
+    c.pctSource = 'ic';   // real grade always wins over a manual guess or the old demo number
+  } else if(c.pctSource !== 'manual'){
+    // The school hasn't posted a grade for this course yet — the number
+    // still sitting in c.pct is leftover demo data, not real. Keep it
+    // around as a numeric baseline for what-if math, but mark it so the
+    // UI shows "Not graded yet" instead of presenting it as real.
+    c.pctSource = 'none';
   }
   if(course.teacher) c.icTeacher = course.teacher;   // kept separate, not overwriting yours
   if(course.period)  c.icPeriod  = course.period;
@@ -5072,6 +5198,13 @@ async function syncInfiniteCampus(quiet){
     icState.matched = [];
     icState.unmatched = [];
 
+    if(data.displayOptions){
+      // The school's own portal settings, not something a scraper can
+      // work around — Paradigm High has attendance switched off for
+      // students entirely, so show that honestly instead of demo numbers.
+      icAttendanceEnabled = !!data.displayOptions.attendance;
+    }
+
     if(!data.live){
       if(!quiet) console.log('[IC] gradebook is switched off at the school — nothing to overlay');
       return icState;
@@ -5086,6 +5219,10 @@ async function syncInfiniteCampus(quiet){
     if(icState.unmatched.length)
       console.warn('[IC] no local match for:', icState.unmatched.join(', '));
 
+    // Real assignment objects only start existing once a sync has run, so
+    // uploads/drafts/reviews saved against them need reattaching here too —
+    // not just once at page load, when only demo placeholders exist yet.
+    loadUserContent();
     if(typeof IC_RENDER_FN === 'function') IC_RENDER_FN();
     drainPlanAutoFillQueue();   // don't block the render on Jarvis writing plans
     return icState;

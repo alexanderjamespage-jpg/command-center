@@ -171,6 +171,22 @@ def normalise(raw, assignments_by_course=None):
     return out
 
 
+def fetch_display_options(session, structure_id):
+    """
+    Whether the school has attendance visible to students at all is a
+    per-school toggle, not something a scraper can work around. Found via
+    a real logged-in session's own network traffic — /api/portal/
+    displayOptions/{structureID} returns the school's feature flags.
+    """
+    r = session.get(f"{BASE}/api/portal/displayOptions/{structure_id}", timeout=20)
+    r.raise_for_status()
+    opts = r.json()
+    return {
+        "attendance": bool(opts.get("attendance")),
+        "behavior": bool(opts.get("behavior")),
+    }
+
+
 def poll_once(username, password):
     s = ic_login(username, password)
     r = s.get(f"{BASE}/resources/portal/grades", timeout=20)
@@ -184,6 +200,15 @@ def poll_once(username, password):
         assignments_by_course = {}
 
     data = normalise(raw, assignments_by_course)
+
+    try:
+        entry = raw[0] if isinstance(raw, list) else raw
+        structure_id = entry.get("structureID")
+        data["displayOptions"] = fetch_display_options(s, structure_id) if structure_id else {}
+    except Exception as e:
+        print(f"[ic] display options fetch failed — {e}")
+        data["displayOptions"] = {}
+
     data["fetched"] = int(time.time())
 
     with _lock:
