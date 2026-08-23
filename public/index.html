@@ -4930,6 +4930,45 @@ function icGradeClass(pct){
 }
 
 /* Overlay one IC course onto one local class entry. */
+/* Real assignments IC hands us that don't have a plan yet get queued here
+   by icOverlayCourse, then drained right after every sync — not just once
+   at page load — so Jarvis starts writing a plan the moment a new real
+   assignment shows up, whether that's on first load or ten minutes later. */
+let pendingPlanQueue = [];
+let autoFillRunning = false;
+function queuePlanAutoFill(classId, list, idx){
+  pendingPlanQueue.push({classId, list, idx});
+}
+async function drainPlanAutoFillQueue(){
+  if(autoFillRunning || !jarvisPrefetch || !pendingPlanQueue.length) return;
+  autoFillRunning = true;
+  try{
+    const probe = await fetch(`${ollamaUrl}/api/tags`, { headers: ollamaHeaders() }).catch(()=>null);
+    if(!probe || !probe.ok) return;
+
+    while(pendingPlanQueue.length){
+      const item = pendingPlanQueue.shift();
+      const c = classes[item.classId];
+      const a = c && c[item.list] && c[item.list][item.idx];
+      if(!a || a.plan || !a.points) continue;   // already handled meanwhile, or not a real gradable item
+      try{
+        await generatePlan(item.classId, item.idx, item.list);
+        // If you're looking right at it, fill it in live instead of waiting for a reopen.
+        if(currentWorkspace && currentWorkspace.classId === item.classId
+           && currentWorkspace.list === item.list && currentWorkspace.idx === item.idx){
+          openWorkspace(item.classId, item.idx, item.list);
+        }
+      }catch(e){
+        console.warn('[IC] plan auto-fill stopped:', e.message);
+        break;
+      }
+      await new Promise(r=>setTimeout(r, 400));   // breathe between requests
+    }
+  } finally {
+    autoFillRunning = false;
+  }
+}
+
 function icOverlayCourse(key, course){
   const c = classes[key];
   if(!c) return;
@@ -4967,6 +5006,7 @@ function icOverlayCourse(key, course){
       existing.missing = a.missing;
       existing.late = a.late;
       existing.src = 'ic';
+      if(!existing.plan) queuePlanAutoFill(key, list, c[list].indexOf(existing));
     } else {
       c[list].push({
         name: a.name,
@@ -4980,6 +5020,7 @@ function icOverlayCourse(key, course){
         req: '',
         src: 'ic'
       });
+      queuePlanAutoFill(key, list, c[list].length - 1);
     }
   });
 }
@@ -5011,6 +5052,7 @@ async function syncInfiniteCampus(quiet){
       console.warn('[IC] no local match for:', icState.unmatched.join(', '));
 
     if(typeof IC_RENDER_FN === 'function') IC_RENDER_FN();
+    drainPlanAutoFillQueue();   // don't block the render on Jarvis writing plans
     return icState;
 
   }catch(e){
