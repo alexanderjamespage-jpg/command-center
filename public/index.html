@@ -4887,7 +4887,16 @@ const IC_ENDPOINT = () => `${ollamaUrl}/grades.json`;
      grep -n "function render\|function draw\|function paint" public/index.html
    Leave null and the overlay still runs — the UI just won't
    refresh until the next redraw happens on its own. */
-const IC_RENDER_FN = renderClassGrid;
+/* The dashboard shows grades/assignments in more than one place — the class
+   card grid, the "Upcoming & Grades" accordion, and (if open) the class
+   detail page. A sync that only refreshes one of them leaves the others
+   showing stale pre-sync numbers indefinitely, since nothing else ever
+   re-renders them. */
+function IC_RENDER_FN(){
+  if(typeof renderClassGrid === 'function') renderClassGrid();
+  if(typeof renderDash === 'function') renderDash();
+  if(currentClassId && typeof openClass === 'function') openClass(currentClassId);
+}
 
 let icState = { live: false, lastChecked: null, error: null, matched: [], unmatched: [] };
 
@@ -4986,9 +4995,12 @@ function icOverlayCourse(key, course){
 
   if(!Array.isArray(course.assignments) || !course.assignments.length) return;
 
-  // Tag anything already present as local so it stays distinguishable.
+  // Once real per-assignment data exists for this course, drop the demo
+  // placeholder assignments entirely instead of leaving them to show up as
+  // "Next up" or in past work — fake due dates and grades must never look
+  // real just because nothing real happened to be upcoming right now.
   ['upcoming','past'].forEach(list=>{
-    (c[list] || []).forEach(a=>{ if(!a.src) a.src = 'local'; });
+    c[list] = (c[list] || []).filter(a=>a.src === 'ic');
   });
 
   const now = Date.now();
