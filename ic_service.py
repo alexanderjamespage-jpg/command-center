@@ -24,7 +24,7 @@ import os
 import sys
 import threading
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
@@ -108,7 +108,7 @@ def fetch_assignments(session):
     Both are merged and deduped by objectSectionID, then bucketed by course
     name so normalise() can attach them to the right course.
     """
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     start = (now - timedelta(days=60)).strftime("%Y-%m-%dT00:00:00")
     end = (now + timedelta(days=120)).strftime("%Y-%m-%dT00:00:00")
     scored_since = (now - timedelta(days=365)).strftime("%Y-%m-%dT00:00:00")
