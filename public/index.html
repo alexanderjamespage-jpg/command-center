@@ -4116,16 +4116,37 @@ function jarvisSystemPrompt(extra, focusClassId){
 /* Low-level call to Ollama's chat endpoint. Throws a readable error. */
 async function jarvisChat(messages, opts){
   opts = opts || {};
-  const res = await fetch(`${ollamaUrl}/api/chat`, {
-    method:'POST',
-    headers: ollamaHeaders(),
-    body: JSON.stringify({
-      model: ollamaModel,
-      messages,
-      stream: false,
-      options: { num_ctx: opts.num_ctx || 8192, temperature: opts.temperature == null ? 0.6 : opts.temperature }
-    })
-  });
+  // Without a cap the Mac mini (slow, CPU-bound generation) can ramble for
+  // minutes on a single reply, blowing past ngrok's and the browser's own
+  // timeouts with no error — just an endless "loading" state. Bound both
+  // the reply length and the wait, and fail with a readable message.
+  const controller = new AbortController();
+  const timeoutMs = opts.timeoutMs || 90000;
+  const timer = setTimeout(()=>controller.abort(), timeoutMs);
+  let res;
+  try{
+    res = await fetch(`${ollamaUrl}/api/chat`, {
+      method:'POST',
+      headers: ollamaHeaders(),
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: ollamaModel,
+        messages,
+        stream: false,
+        options: {
+          num_ctx: opts.num_ctx || 8192,
+          num_predict: opts.num_predict || 600,
+          temperature: opts.temperature == null ? 0.6 : opts.temperature
+        }
+      })
+    });
+  }catch(err){
+    if(err.name === 'AbortError')
+      throw new Error(`The Mac mini didn't reply within ${Math.round(timeoutMs/1000)}s — it may be overloaded or still loading the model. Try again in a moment.`);
+    throw err;
+  }finally{
+    clearTimeout(timer);
+  }
   const text = await res.text();
   if(!res.ok) throw new Error(explainOllamaFailure(null, res, text));
   let data;
